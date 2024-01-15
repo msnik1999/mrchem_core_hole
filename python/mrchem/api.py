@@ -32,6 +32,7 @@ from .helpers import (
     write_scf_properties,
     write_scf_plot,
     write_rsp_calc,
+    write_scf_occupancies,
     parse_wf_method,
 )
 from .periodictable import PeriodicTable as PT, PeriodicTableByZ as PT_Z
@@ -165,6 +166,8 @@ def write_scf_calculation(user_dict, origin):
     plot_dict = write_scf_plot(user_dict)
     if len(plot_dict) > 0:
         scf_dict["plots"] = plot_dict
+        
+    scf_dict["occupancies"] = write_scf_occupancies(user_dict)
 
     return scf_dict
 

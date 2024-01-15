@@ -938,6 +938,16 @@ sections:
             docstring: |
               Formulation of the Permittivity function. Currently only the
               exponential is used.
+  - name: OrbitalOccupancies
+    docstring: |
+      Modify the default orbital occupancies in order to perform a DeltaSCF calculation.
+    keywords:
+      - name: occupancies
+        type: str
+        default: ''
+        docstring: |
+          List of orbitals, i, for which the default occupancy, f, should be overwritten, written
+          as a list in the format "i f_up f_down", where the orbitals are indexed from zero.
   - name: Constants
     docstring: Physical and mathematical constants used by MRChem
     keywords:
