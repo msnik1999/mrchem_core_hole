@@ -745,6 +745,12 @@ User input reference
     **Type** ``float``
   
     **Default** ``10 * user['world_prec']``
+
+   :deltascf_method: Method to use for a DeltaSCF calculation. Options are ``none`` for a normal SCF run, ``MOM`` for a run using the MOM method and ``IMOM`` for a run using the IMOM method.
+
+   **Type** ``str``
+
+   **Default** ``none``
   
  :Response: Includes parameters related to the response SCF optimization. 
 
