@@ -440,6 +440,12 @@ User input reference
   
     **Default** ``[]``
   
+   :hirshfeld_charges: Compute Hirshfeld charges. 
+  
+    **Type** ``bool``
+  
+    **Default** ``False``
+  
    :geometric_derivative: Compute geometric derivative. 
   
     **Type** ``bool``

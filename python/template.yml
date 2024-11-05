@@ -403,6 +403,11 @@ sections:
         docstring: |
           Plot converged molecular orbitals from list of indices, negative index
           plots all orbitals.
+      - name: hirshfeld_charges
+        type: bool
+        default: false
+        docstring: |
+          Compute Hirshfeld charges.
   - name: ExternalFields
     docstring: |
       Define external electromagnetic fields.

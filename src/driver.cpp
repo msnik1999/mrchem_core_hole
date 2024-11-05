@@ -27,6 +27,7 @@
 #include <MRCPP/Printer>
 #include <MRCPP/Timer>
 
+#include <filesystem>
 #include "driver.h"
 
 #include "chemistry/Molecule.h"
@@ -81,6 +82,8 @@
 #include "environment/LPBESolver.h"
 #include "environment/PBESolver.h"
 #include "environment/Permittivity.h"
+
+#include "properties/hirshfeld/HirshfeldPartition.h"
 
 #include "mrdft/Factory.h"
 
@@ -216,6 +219,13 @@ void driver::init_properties(const json &json_prop, Molecule &mol) {
             const auto &id = item.key();
             auto &geom_map = mol.getGeometricDerivatives();
             if (not geom_map.count(id)) geom_map.insert({id, GeometricDerivative(mol.getNNuclei())});
+        }
+    }
+    if (json_prop.contains("hirshfeld_charges")) {
+        for (const auto &item : json_prop["hirshfeld_charges"].items()) {
+            const auto &id = item.key();
+            auto &hir_map = mol.getHirshfeldCharges();
+            if (not hir_map.count(id)) hir_map.insert({id, HirshfeldCharges()});
         }
     }
 }
@@ -663,6 +673,41 @@ void driver::scf::calc_properties(const json &json_prop, Molecule &mol) {
         }
         mrcpp::print::footer(2, t_lap, 2);
         if (plevel == 1) mrcpp::print::time(1, "NMR shielding (dia)", t_lap);
+    }
+
+    if (json_prop.contains("hirshfeld_charges")) {
+        t_lap.start();
+        std::string source_dir = HIRSHFELD_SOURCE_DIR;
+        std::string install_dir = HIRSHFELD_INSTALL_DIR;
+        std::string data_dir = "";
+        // check if data_dir exists
+        if (std::filesystem::exists(install_dir)) {
+            data_dir = install_dir + "/lda/";
+        } else if (std::filesystem::exists(source_dir)) {
+            data_dir = source_dir + "/lda/";
+        } else {
+            MSG_ABORT("Hirshfeld data directory not found");
+        }
+        for (const auto &item : json_prop["hirshfeld_charges"].items()) {
+            const auto &id = item.key();
+            double prec = item.value()["precision"];
+
+            HirshfeldPartition partitioner(mol, data_dir);
+            mrchem::Density rho(false);
+            mrchem::density::compute(prec, rho, Phi, DensityType::Total);
+            Eigen::VectorXd charges = Eigen::VectorXd::Zero(mol.getNNuclei());
+            for (int i = 0; i < mol.getNNuclei(); i++) {
+                if ( ! mrcpp::mpi::my_orb(i) ) continue; // my_orb also works for atoms.
+                double charge = partitioner.getHirshfeldPartitionIntegral(i, rho, prec);
+                charge = - charge + mol.getNuclei()[i].getCharge();
+                charges(i) = charge;
+            }
+            mrcpp::mpi::allreduce_vector(charges, mrcpp::mpi::comm_wrk);
+            HirshfeldCharges &hir = mol.getHirshfeldCharges(id);
+            hir.setVector(charges);
+        }
+        mrcpp::print::footer(2, t_lap, 2);
+        if (plevel == 1) mrcpp::print::time(1, "Computing Hirshfeld charges", t_lap);
     }
 
     if (json_prop.contains("hyperpolarizability")) MSG_ERROR("Hyperpolarizability not implemented");
