@@ -41,6 +41,9 @@ nlohmann::json run(const nlohmann::json &input, Molecule &mol);
 namespace rsp {
 nlohmann::json run(const nlohmann::json &input, Molecule &mol);
 }
+namespace embedding {
+nlohmann::json run(const nlohmann::json &input, Molecule &mol, Molecule &mol2);
+}
 
 } // namespace driver
 } // namespace mrchem

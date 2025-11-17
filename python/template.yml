@@ -276,6 +276,34 @@ sections:
         docstring: |
           Coordinates in xyz format. Atoms can be given either using atom symbol or
           atom number
+  - name: Molecule2
+    docstring: |
+      Define second molecule for embedding.
+    keywords:
+      - name: charge
+        type: int
+        default: 0
+        docstring: |
+          Total charge of molecule.
+      - name: multiplicity
+        type: int
+        default: 1
+        predicates:
+          - value > 0
+        docstring: |
+          Spin multiplicity of molecule.
+      - name: translate
+        type: bool
+        default: false
+        docstring: |
+          Translate coordinates such that center of mass coincides with
+          the global gauge origin.
+      - name: coords
+        type: str
+        docstring: |
+          Coordinates in xyz format. Atoms can be given either using atom symbol or
+          atom number
+        default: ''
   - name: WaveFunction
     docstring: |
       Define the wavefunction method.

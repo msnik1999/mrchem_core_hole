@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include <MRCPP/Timer>
 #include <MRCPP/Parallel>
@@ -56,6 +57,7 @@ int main(int argc, char **argv) {
 
     mrenv::initialize(json_inp);
     const auto &mol_inp = json_inp["molecule"];
+    const auto &mol2_inp = json_inp["molecule2"];
     const auto &scf_inp = json_inp["scf_calculation"];
     const auto &rsp_inp = json_inp["rsp_calculations"];
     const auto &con_inp = json_inp["constants"];
@@ -73,8 +75,15 @@ int main(int argc, char **argv) {
         mrcpp::mpi::barrier(mrcpp::mpi::comm_wrk);
     } else {
         Molecule mol;
+        json scf_out = {};
         driver::init_molecule(mol_inp, mol);
-        auto scf_out = driver::scf::run(scf_inp, mol);
+        if (!mol2_inp.empty()) {
+            Molecule mol2;
+            driver::init_molecule(mol2_inp, mol2);
+            scf_out = driver::embedding::run(scf_inp, mol, mol2);
+        }
+        else 
+            scf_out = driver::scf::run(scf_inp, mol);
         json rsp_out = {};
         if (scf_out["success"]) {
             for (auto &i : rsp_inp.items()) rsp_out[i.key()] = driver::rsp::run(i.value(), mol);

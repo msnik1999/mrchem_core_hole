@@ -108,6 +108,12 @@ class unicode_set:
         return "".join(
             sorted(identifier_chars | set(cls.identchars) | set("0123456789·"))
         )
+<<<<<<< HEAD
+=======
+        return "".join(
+            sorted(identifier_chars | set(cls.identchars) | set("0123456789·"))
+        )
+>>>>>>> added second molecule to input_parser; new embedding section in driver
 
     @_lazyclassproperty
     def identifier(cls):
