@@ -78,7 +78,7 @@ class MoleculeValidator:
 
     ERROR_RESTRICTED_OPEN_SHELL = "ABORT: Restricted open-shell not implemented"
 
-    def __init__(self, user_dict, origin):
+    def __init__(self, user_dict, origin, first_mol=True):
         """
         Raises RunTimeError with helpful messages when invalid format
         or unphysical input value are detected:
@@ -114,7 +114,10 @@ class MoleculeValidator:
         self.pc = user_dict["Constants"]
 
         # Molecule related data
-        self.user_mol = user_dict["Molecule"]
+        if first_mol:
+            self.user_mol = user_dict["Molecule"]
+        else:
+            self.user_mol = user_dict["Molecule2"]
         self.charge = self.user_mol["charge"]
         self.mult = self.user_mol["multiplicity"]
         self.do_translate = self.user_mol["translate"]

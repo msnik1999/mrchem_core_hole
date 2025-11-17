@@ -71,7 +71,7 @@ public:
     explicit Molecule(int c = 0, int m = 1);
     explicit Molecule(const std::string &coord_file, int c = 0, int m = 1);
     explicit Molecule(const std::vector<std::string> &coord_str, int c = 0, int m = 1);
-    Molecule(const Molecule &mol) = delete;
+    // Molecule(const Molecule &mol) = delete;
     Molecule &operator=(const Molecule &mol) = delete;
 
     int getCharge() const { return this->charge; }

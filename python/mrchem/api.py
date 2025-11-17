@@ -41,7 +41,8 @@ def translate_input(user_dict):
         origin = [pc["angstrom2bohrs"] * r for r in origin]
 
     # prepare bits and pieces
-    mol_dict = write_molecule(user_dict, origin)
+    mol_dict = write_molecule(user_dict, origin, first_mol = True)
+    mol2_dict = write_molecule(user_dict, origin, first_mol = False)
     mpi_dict = write_mpi(user_dict)
     mra_dict = write_mra(user_dict, mol_dict)
     scf_dict = write_scf_calculation(user_dict, origin)
@@ -55,6 +56,7 @@ def translate_input(user_dict):
         "mra": mra_dict,
         "printer": user_dict["Printer"],
         "molecule": mol_dict,
+        "molecule2": mol2_dict,
         "scf_calculation": scf_dict,
         "rsp_calculations": rsp_dict,
         "geom_opt": user_dict['GeometryOptimizer'],
@@ -118,14 +120,16 @@ def write_mra(user_dict, mol_dict):
 ############################################################
 
 
-def write_molecule(user_dict, origin):
+def write_molecule(user_dict, origin, first_mol = True):
     # Translate into program syntax
-    mol = MoleculeValidator(user_dict, origin)
+    mol = MoleculeValidator(user_dict, origin, first_mol = first_mol)
     mol_dict = {
         "multiplicity": mol.mult,
         "charge": mol.charge,
         "coords": mol.get_coords_in_program_syntax(),
     }
+    if mol_dict["coords"] == []:
+        return {}
 
     if "pcm" in user_dict["WaveFunction"]["environment"].lower():
         mol_dict["cavity"] = {

@@ -1364,4 +1364,23 @@ json driver::print_properties(const Molecule &mol) {
     return mol.json();
 }
 
+/**
+ * @brief Run embedding calculation
+ */
+json driver::embedding::run(const json &json_scf, Molecule &mol, Molecule &mol2) {
+    print_utils::headline(0, "Computing Embedding Wavefunction");
+    json json_out = {{"success", true}};
+
+    print_utils::headline(0, "Running isolated SCF for System A");
+    json scfA_out = driver::scf::run(json_scf, mol);
+    print_utils::headline(0, "Running isolated SCF for System B");
+    json scfB_out = driver::scf::run(json_scf, mol2);
+
+    // Embedding calculation would go here
+
+    MSG_ERROR("Embedding driver not implemented");
+
+    return json_out;
+}
+
 } // namespace mrchem
