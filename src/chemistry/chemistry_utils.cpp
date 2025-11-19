@@ -55,6 +55,31 @@ double chemistry::compute_nuclear_repulsion(const Nuclei &nucs) {
     return E_nuc;
 }
 
+/**
+ * @brief computes the repulsion energy between two sets of nuclei
+ * @param nucsA First set of nuclei
+ * @param nucsB Second set of nuclei
+ * @return The nuclear repulsion energy between the two sets
+ */
+double chemistry::compute_nuclear_repulsion(const Nuclei &nucsA, const Nuclei &nucsB) {
+    int nNucsA = nucsA.size();
+    int nNucsB = nucsB.size();
+    double E_nuc = 0.0;
+    for (int i = 0; i < nNucsA; i++) {
+        const Nucleus &nuc_i = nucsA[i];
+        const double Z_i = nuc_i.getCharge();
+        const mrcpp::Coord<3> &R_i = nuc_i.getCoord();
+        for (int j = 0; j < nNucsB; j++) {
+            const Nucleus &nuc_j = nucsB[j];
+            const double Z_j = nuc_j.getCharge();
+            const mrcpp::Coord<3> &R_j = nuc_j.getCoord();
+            double R_ij = math_utils::calc_distance(R_i, R_j);
+            E_nuc += (Z_i * Z_j) / R_ij;
+        }
+    }
+    return E_nuc;
+}
+
 /** @brief Returns the sum of atomic charges*/
 double chemistry::get_total_charge(const Nuclei &nucs) {
     double charge = 0;

@@ -127,6 +127,9 @@ bool guess_orbitals(const json &input, Molecule &mol);
 void write_orbitals(const json &input, Molecule &mol, bool dynamic);
 void calc_properties(const json &input, Molecule &mol, int dir, double omega);
 } // namespace rsp
+namespace embedding {
+void buildEmbeddingFockOperator(const json &json_fock, Molecule &molA, Molecule &molB, FockBuilder &F, int order, bool is_dynamic = false);
+} // namespace embedding
 
 } // namespace driver
 
@@ -1377,10 +1380,170 @@ json driver::embedding::run(const json &json_scf, Molecule &mol, Molecule &mol2)
     json scfB_out = driver::scf::run(json_scf, mol2);
 
     // Embedding calculation would go here
+    ///////////////////////////////////////////////////////////
+    ////////////////   Building Fock Operator   ///////////////
+    ///////////////////////////////////////////////////////////
+    FockBuilder F;
+    driver::embedding::buildEmbeddingFockOperator(json_scf["fock_operator"], mol, mol2, F, 0, false);
 
-    MSG_ERROR("Embedding driver not implemented");
+    ///////////////////////////////////////////////////////////
+    //////////   Optimizing Ground State Orbitals  ////////////
+    ///////////////////////////////////////////////////////////
 
+    // Run GroundStateSolver if present in input JSON
+    if (json_scf.contains("scf_solver")) {
+        print_utils::headline(0, "Computing Ground State Wavefunction");
+
+        auto kain = json_scf["scf_solver"]["kain"];
+        auto method = json_scf["scf_solver"]["method"];
+        auto relativity = json_scf["scf_solver"]["relativity"];
+        auto environment = json_scf["scf_solver"]["environment"];
+        auto external_field = json_scf["scf_solver"]["external_field"];
+        auto max_iter = json_scf["scf_solver"]["max_iter"];
+        auto rotation = json_scf["scf_solver"]["rotation"];
+        auto localize = json_scf["scf_solver"]["localize"];
+        auto file_chk = json_scf["scf_solver"]["file_chk"];
+        auto checkpoint = json_scf["scf_solver"]["checkpoint"];
+        auto start_prec = json_scf["scf_solver"]["start_prec"];
+        auto final_prec = json_scf["scf_solver"]["final_prec"];
+        auto energy_thrs = json_scf["scf_solver"]["energy_thrs"];
+        auto orbital_thrs = json_scf["scf_solver"]["orbital_thrs"];
+        auto helmholtz_prec = json_scf["scf_solver"]["helmholtz_prec"];
+
+        GroundStateSolver solver;
+        solver.setHistory(kain);
+        solver.setRotation(rotation);
+        solver.setLocalize(localize);
+        solver.setMethodName(method);
+        solver.setRelativityName(relativity);
+        solver.setEnvironmentName(environment);
+        solver.setExternalFieldName(external_field);
+        solver.setCheckpoint(checkpoint);
+        solver.setCheckpointFile(file_chk);
+        solver.setMaxIterations(max_iter);
+        solver.setHelmholtzPrec(helmholtz_prec);
+        solver.setOrbitalPrec(start_prec, final_prec);
+        solver.setThreshold(orbital_thrs, energy_thrs);
+
+        json_out["scf_solver"] = solver.optimize(mol, F);
+        json_out["success"] = json_out["scf_solver"]["converged"];
+    }
     return json_out;
+}
+
+void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecule &molA, Molecule &molB, FockBuilder &F, int order, bool is_dynamic) {
+    auto &nucleiA = molA.getNuclei();
+    auto Phi_pA = molA.getOrbitals_p();
+    auto &nucleiB = molB.getNuclei();
+    auto Phi_pB = molB.getOrbitals_p();
+
+    ///////////////////////////////////////////////////////////
+    ///////////////      Momentum Operator    /////////////////
+    ///////////////////////////////////////////////////////////
+    if (json_fock.contains("kinetic_operator")) {
+        auto kin_diff = json_fock["kinetic_operator"]["derivative"];
+        auto D_p = driver::get_derivative(kin_diff);
+        auto P_p = std::make_shared<MomentumOperator>(D_p);
+        F.getMomentumOperator() = P_p;
+    }
+    ///////////////////////////////////////////////////////////
+    //////////////////   Nuclear Operator   ///////////////////
+    ///////////////////////////////////////////////////////////
+    if (json_fock.contains("nuclear_operator")) {
+        auto nuc_model = json_fock["nuclear_operator"]["nuclear_model"];
+        auto proj_prec = json_fock["nuclear_operator"]["proj_prec"];
+        auto smooth_prec = json_fock["nuclear_operator"]["smooth_prec"];
+        auto shared_memory = json_fock["nuclear_operator"]["shared_memory"];
+        auto V_p = std::make_shared<NuclearOperator>(nucleiA, proj_prec, smooth_prec, shared_memory, nuc_model);
+        F.getNuclearOperator() = V_p;
+    }
+    ///////////////////////////////////////////////////////////
+    //////////////////   Coulomb Operator   ///////////////////
+    ///////////////////////////////////////////////////////////
+    if (json_fock.contains("coulomb_operator")) {
+        auto poisson_prec = json_fock["coulomb_operator"]["poisson_prec"];
+        auto shared_memory = json_fock["coulomb_operator"]["shared_memory"];
+        auto P_p = std::make_shared<PoissonOperator>(*MRA, poisson_prec);
+        auto J_p = std::make_shared<CoulombOperator>(P_p, Phi_pA, shared_memory);
+        F.getCoulombOperator() = J_p;
+    }
+    ///////////////////////////////////////////////////////////
+    ////////////////////   XC Operator   //////////////////////
+    ///////////////////////////////////////////////////////////
+    double exx = 1.0;
+    if (json_fock.contains("xc_operator")) {
+        auto shared_memory = json_fock["xc_operator"]["shared_memory"];
+        auto json_xcfunc = json_fock["xc_operator"]["xc_functional"];
+        auto xc_spin = json_xcfunc["spin"];
+        auto xc_cutoff = json_xcfunc["cutoff"];
+        auto xc_funcs = json_xcfunc["functionals"];
+        auto xc_order = order + 1;
+
+        mrdft::Factory xc_factory(*MRA);
+        xc_factory.setSpin(xc_spin);
+        xc_factory.setOrder(xc_order);
+        xc_factory.setDensityCutoff(xc_cutoff);
+        for (const auto &f : xc_funcs) {
+            auto name = f["name"];
+            auto coef = f["coef"];
+            xc_factory.setFunctional(name, coef);
+        }
+        auto mrdft_p = xc_factory.build();
+        exx = mrdft_p->functional().amountEXX();
+        auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_pA, shared_memory);
+        F.getXCOperator() = XC_p;
+    }
+    ///////////////////////////////////////////////////////////
+    /////////////////   Exchange Operator   ///////////////////
+    ///////////////////////////////////////////////////////////
+    if (json_fock.contains("exchange_operator") and exx > mrcpp::MachineZero) {
+        auto exchange_prec = json_fock["exchange_operator"]["exchange_prec"];
+        auto poisson_prec = json_fock["exchange_operator"]["poisson_prec"];
+        auto P_p = std::make_shared<PoissonOperator>(*MRA, poisson_prec);
+        auto K_p = std::make_shared<ExchangeOperator>(P_p, Phi_pA, exchange_prec);
+        F.getExchangeOperator() = K_p;
+    }
+    
+    //////////////////////////////////////////////////////////
+    //////////////  Nuclear Operator from B  /////////////////
+    //////////////////////////////////////////////////////////
+    if (json_fock.contains("nuclear_operator")) {
+        auto nuc_model = json_fock["nuclear_operator"]["nuclear_model"];
+        auto proj_prec = json_fock["nuclear_operator"]["proj_prec"];
+        auto smooth_prec = json_fock["nuclear_operator"]["smooth_prec"];
+        auto shared_memory = json_fock["nuclear_operator"]["shared_memory"];
+        auto V_pB = std::make_shared<NuclearOperator>(nucleiB, proj_prec, smooth_prec, shared_memory, nuc_model);
+        F.getNuclearOperatorB() = V_pB;
+    }
+
+    //////////////////////////////////////////////////////////
+    //////////////  Coulomb Operator from B  /////////////////
+    //////////////////////////////////////////////////////////
+    if (json_fock.contains("coulomb_operator")) {
+        auto poisson_prec = json_fock["coulomb_operator"]["poisson_prec"];
+        auto shared_memory = json_fock["coulomb_operator"]["shared_memory"];
+        auto P_p = std::make_shared<PoissonOperator>(*MRA, poisson_prec);
+        auto J_pB = std::make_shared<CoulombOperator>(P_p, Phi_pB, shared_memory);
+        F.getCoulombOperatorB() = J_pB;
+    }
+
+    //////////////////////////////////////////////////////////
+    //////////////  Constant interaction energies ////////////
+    //////////////////////////////////////////////////////////
+    auto nuc_model = json_fock["nuclear_operator"]["nuclear_model"];
+    auto proj_prec = json_fock["nuclear_operator"]["proj_prec"];
+    auto smooth_prec = json_fock["nuclear_operator"]["smooth_prec"];
+    auto shared_memory = json_fock["nuclear_operator"]["shared_memory"];
+    NuclearOperator V_pA(nucleiA, proj_prec, smooth_prec, shared_memory, nuc_model);
+    V_pA.setup(1e-5);
+    double E_nuc_A = V_pA.trace(*Phi_pB).real();
+    V_pA.clear();
+    double E_nuc_nuc = chemistry::compute_nuclear_repulsion(nucleiA, nucleiB);
+    double E_totalB = molB.getSCFEnergy().getTotalEnergy();
+    std::cout << "E_nuc_A (const)    : " << E_nuc_A << " Ha" << std::endl;
+    std::cout << "E_nuc_nuc (const)  : " << E_nuc_nuc << " Ha" << std::endl;
+    
+    F.build(exx, E_nuc_A, E_nuc_nuc, E_totalB);
 }
 
 } // namespace mrchem

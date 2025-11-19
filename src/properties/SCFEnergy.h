@@ -47,11 +47,16 @@ public:
                        double en = 0.0, double ee = 0.0,
                        double x = 0.0, double xc = 0.0,
                        double next = 0.0, double eext = 0.0,
-                       double rt = 0.0, double rn = 0.0, double re = 0.0) :
+                       double rt = 0.0, double rn = 0.0, double re = 0.0,
+                       double ena = 0.0, double enanb = 0.0,
+                       double ecab = 0.0, double enb = 0.0, double etotb = 0.0) :
         E_kin(kin), E_nn(nn), E_en(en), E_ee(ee),
-          E_x(x), E_xc(xc), E_next(next), E_eext(eext), Er_tot(rt), Er_nuc(rn), Er_el(re) {
+          E_x(x), E_xc(xc), E_next(next), E_eext(eext), Er_tot(rt), Er_nuc(rn), Er_el(re),
+          E_nucA(ena), E_nucA_nucB(enanb), E_coulAB(ecab), E_nucB(enb), E_totalB(etotb) {
             E_nuc = E_nn + E_next + Er_nuc;
             E_el = E_kin + E_en + E_ee + E_xc + E_x + E_eext + Er_el;
+            E_esi = E_nucA + E_nucA_nucB + E_coulAB + E_nucB;
+            E_emb = E_nuc + E_el + E_totalB + E_esi;
         }
 
     double getTotalEnergy() const { return this->E_nuc + this->E_el; }
@@ -69,6 +74,7 @@ public:
     double getReactionEnergy() const { return this->Er_tot; }
     double getElectronReactionEnergy() const { return this->Er_el; }
     double getNuclearReactionEnergy() const { return this->Er_nuc; }
+    double getEmbeddedEnergy() const { return this->E_emb; }
 
     void print(const std::string &id) const {
         auto E_au = E_nuc + E_el;
@@ -87,6 +93,11 @@ public:
         print_utils::scalar(0, "Exchange energy  ", E_x,    "(au)", pprec, false);
         print_utils::scalar(0, "X-C energy       ", E_xc,   "(au)", pprec, false);
         print_utils::scalar(0, "N-N energy       ", E_nn,   "(au)", pprec, false);
+        print_utils::scalar(0, "ESI              ", E_esi , "(au)", pprec, false);
+        print_utils::scalar(0, "Nuclear const A  ", E_nucA, "(au)", pprec, false);
+        print_utils::scalar(0, "Nuclear const A-B", E_nucA_nucB, "(au)", pprec, false);
+        print_utils::scalar(0, "Coulomb const A-B", E_coulAB, "(au)", pprec, false);
+        print_utils::scalar(0, "Nuclear const B  ", E_nucB, "(au)", pprec, false);
         if (has_ext) {
             mrcpp::print::separator(0, '-');
             print_utils::scalar(0, "External field (el)  ", E_eext, "(au)", pprec, false);
@@ -107,6 +118,7 @@ public:
         print_utils::scalar(0, "                 ", E_kcal, "(kcal/mol)", pprec, true);
         print_utils::scalar(0, "                 ", E_kJ,   "(kJ/mol)", pprec, true);
         print_utils::scalar(0, "                 ", E_eV,   "(eV)", pprec, true);
+        print_utils::scalar(0, "Embedded energy  ", E_emb,  "(au)", pprec, true);
         mrcpp::print::separator(0, '=', 2);
     }
 
@@ -125,7 +137,12 @@ public:
             {"Er_el", Er_el},
             {"Er_nuc", Er_nuc},
             {"E_nuc", E_nuc},
-            {"E_tot", E_nuc + E_el}
+            {"E_tot", E_nuc + E_el},
+            {"E_nucA", E_nucA},
+            {"E_nucA_nucB", E_nucA_nucB},
+            {"E_coulAB", E_coulAB},
+            {"E_nucB", E_nucB},
+            {"E_totalB", E_totalB}
         };
     }
 
@@ -144,6 +161,13 @@ private:
     double Er_tot{0.0};
     double Er_nuc{0.0};
     double Er_el{0.0};
+    double E_esi{0.0};
+    double E_nucA{0.0};
+    double E_nucA_nucB{0.0};
+    double E_coulAB{0.0};
+    double E_nucB{0.0};
+    double E_totalB{0.0};
+    double E_emb{0.0};
 };
 // clang-format on
 

@@ -80,6 +80,8 @@ void GroundStateSolver::printProperty() const {
     double Er_el_1 = scf_1.getElectronReactionEnergy();
     double Er_nuc_0 = scf_0.getNuclearReactionEnergy();
     double Er_nuc_1 = scf_1.getNuclearReactionEnergy();
+    double E_emb_0 = scf_0.getEmbeddedEnergy();
+    double E_emb_1 = scf_1.getEmbeddedEnergy();
 
     bool has_react = (std::abs(Er_el_1) > mrcpp::MachineZero) || (std::abs(Er_nuc_1) > mrcpp::MachineZero);
     bool has_ext = (std::abs(E_eext_1) > mrcpp::MachineZero) || (std::abs(E_next_1) > mrcpp::MachineZero);
@@ -122,6 +124,8 @@ void GroundStateSolver::printProperty() const {
     printUpdate(2, " Nuclear energy   ", N_1, N_1 - N_0, this->propThrs);
     mrcpp::print::separator(2, '-');
     printUpdate(1, " Total energy     ", E_1 + N_1, (E_1 + N_1) - (E_0 + N_0), this->propThrs);
+    mrcpp::print::separator(2, '-');
+    printUpdate(1, " Embedded energy  ", E_emb_1, E_emb_1 - E_emb_0, this->propThrs);
     mrcpp::print::separator(2, '=', 2);
 }
 

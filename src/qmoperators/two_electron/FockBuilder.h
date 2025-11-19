@@ -71,10 +71,12 @@ public:
     std::shared_ptr<ElectricFieldOperator> &getExtOperator() { return this->ext; }
     std::shared_ptr<ReactionOperator> &getReactionOperator() { return this->Ro; }
     std::shared_ptr<AZoraPotential> &getAZoraChiPotential() { return this->chiPot; }
+    std::shared_ptr<NuclearOperator> &getNuclearOperatorB() { return this->nucB; }
+    std::shared_ptr<CoulombOperator> &getCoulombOperatorB() { return this->coulB; }
 
     void rotate(const ComplexMatrix &U);
 
-    void build(double exx = 1.0);
+    void build(double exx = 1.0, double E_nucA = 0.0, double E_nucA_nucB = 0.0, double E_total_B = 0.0);
     void setup(double prec);
     void clear();
 
@@ -120,12 +122,18 @@ private:
     std::shared_ptr<ElectricFieldOperator> ext{nullptr}; // Total external potential
     std::shared_ptr<ZoraOperator> chi{nullptr};
     std::shared_ptr<ZoraOperator> chi_inv{nullptr};
+    std::shared_ptr<NuclearOperator> nucB{nullptr}; // Second nuclear operator for embedding
+    std::shared_ptr<CoulombOperator> coulB{nullptr}; // Second Coulomb operator for embedding
 
     std::shared_ptr<QMPotential> collectZoraBasePotential();
     OrbitalVector buildHelmholtzArgumentZORA(OrbitalVector &Phi, OrbitalVector &Psi, DoubleVector eps, double prec);
     OrbitalVector buildHelmholtzArgumentNREL(OrbitalVector &Phi, OrbitalVector &Psi);
     std::shared_ptr<AZoraPotential> chiPot{nullptr}; // Potential for AZORA chi operator
     std::shared_ptr<QMPotential> chiInvPot{nullptr}; // Potential for AZORA chi_inv operator
+
+    double E_nucA = 0.0;
+    double E_nucA_nucB = 0.0;
+    double E_totalB = 0.0;
 };
 
 } // namespace mrchem
