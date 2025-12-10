@@ -86,6 +86,7 @@ public:
 
         bool has_ext = (std::abs(E_eext) > mrcpp::MachineZero) || (std::abs(E_next) > mrcpp::MachineZero);
         bool has_react = (std::abs(Er_el) > mrcpp::MachineZero) || (std::abs(Er_nuc) > mrcpp::MachineZero);
+        bool has_emb = (std::abs(E_emb - E_au) > mrcpp::MachineZero);
 
         auto pprec = 2 * mrcpp::Printer::getPrecision();
         mrcpp::print::header(0, "Molecular Energy (" + id + ")");
@@ -97,11 +98,14 @@ public:
         print_utils::scalar(0, "N-N energy       ", E_nn,   "(au)", pprec, false);
         print_utils::scalar(0, "Non-local pp energy ", E_nl,   "(au)", pprec, false);
 
-        print_utils::scalar(0, "ESI              ", E_esi , "(au)", pprec, false);
-        print_utils::scalar(0, "Nuclear const A  ", E_nucA, "(au)", pprec, false);
-        print_utils::scalar(0, "Nuclear const A-B", E_nucA_nucB, "(au)", pprec, false);
-        print_utils::scalar(0, "Coulomb const A-B", E_coulAB, "(au)", pprec, false);
-        print_utils::scalar(0, "Nuclear const B  ", E_nucB, "(au)", pprec, false);
+        if (has_emb) {
+            mrcpp::print::separator(0, '-');
+            print_utils::scalar(0, "ESI energy  ", E_esi,       "(au)", pprec, false);
+            print_utils::scalar(0, "V_nucA_elB  ", E_nucA,      "(au)", pprec, false);
+            print_utils::scalar(0, "V_nucA_nucB ", E_nucA_nucB, "(au)", pprec, false);
+            print_utils::scalar(0, "J_elA_elB   ", E_coulAB,    "(au)", pprec, false);
+            print_utils::scalar(0, "V_nucB_elA  ", E_nucB,      "(au)", pprec, false);
+        }
         if (has_ext) {
             mrcpp::print::separator(0, '-');
             print_utils::scalar(0, "External field (el)  ", E_eext, "(au)", pprec, false);
@@ -110,7 +114,7 @@ public:
         }
         if (has_react) {
             mrcpp::print::separator(0, '-');
-            print_utils::scalar(0, "Reaction energy (el)  ", Er_el,  "(au)", pprec, false);
+            print_utils::scalar(0, "Reaction energy (el)  ", Er_el,   "(au)", pprec, false);
             print_utils::scalar(0, "Reaction energy (nuc) ", Er_nuc,  "(au)", pprec, false);
             print_utils::scalar(0, "Reaction energy (tot) ", Er_tot,  "(au)", pprec, false);
         }
@@ -122,7 +126,10 @@ public:
         print_utils::scalar(0, "                 ", E_kcal, "(kcal/mol)", pprec, true);
         print_utils::scalar(0, "                 ", E_kJ,   "(kJ/mol)", pprec, true);
         print_utils::scalar(0, "                 ", E_eV,   "(eV)", pprec, true);
-        print_utils::scalar(0, "Embedded energy  ", E_emb,  "(au)", pprec, true);
+        if (has_emb)  {
+            mrcpp::print::separator(0, '-');
+            print_utils::scalar(0, "Embedded energy  ", E_emb,  "(au)", pprec, true);
+        }
         mrcpp::print::separator(0, '=', 2);
     }
 

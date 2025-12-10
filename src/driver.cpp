@@ -1553,6 +1553,11 @@ json driver::print_properties(const Molecule &mol) {
 
 /**
  * @brief Run embedding calculation
+ * 
+ * @param json_scf Input JSON for SCF calculation
+ * @param mol Molecule object for System A
+ * @param mol2 Molecule object for System B
+ * @return json Output JSON with results
  */
 json driver::embedding::run(const json &json_scf, Molecule &mol, Molecule &mol2) {
     print_utils::headline(0, "Computing Embedding Wavefunction");
@@ -1563,7 +1568,7 @@ json driver::embedding::run(const json &json_scf, Molecule &mol, Molecule &mol2)
     print_utils::headline(0, "Running isolated SCF for System B");
     json scfB_out = driver::scf::run(json_scf, mol2);
 
-    // Embedding calculation would go here
+    print_utils::headline(0, "Running embedded SCF for System A");
     ///////////////////////////////////////////////////////////
     ////////////////   Building Fock Operator   ///////////////
     ///////////////////////////////////////////////////////////
@@ -1612,6 +1617,7 @@ json driver::embedding::run(const json &json_scf, Molecule &mol, Molecule &mol2)
         json_out["scf_solver"] = solver.optimize(mol, F);
         json_out["success"] = json_out["scf_solver"]["converged"];
     }
+    if (json_scf.contains("plots")) scf::plot_quantities(json_scf["plots"], mol);
     return json_out;
 }
 
@@ -1630,6 +1636,7 @@ void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecu
         auto P_p = std::make_shared<MomentumOperator>(D_p);
         F.getMomentumOperator() = P_p;
     }
+
     ///////////////////////////////////////////////////////////
     //////////////////   Nuclear Operator   ///////////////////
     ///////////////////////////////////////////////////////////
@@ -1641,6 +1648,7 @@ void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecu
         auto V_p = std::make_shared<NuclearOperator>(nucleiA, proj_prec, smooth_prec, shared_memory, nuc_model);
         F.getNuclearOperator() = V_p;
     }
+
     ///////////////////////////////////////////////////////////
     //////////////////   Coulomb Operator   ///////////////////
     ///////////////////////////////////////////////////////////
@@ -1651,6 +1659,7 @@ void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecu
         auto J_p = std::make_shared<CoulombOperator>(P_p, Phi_pA, shared_memory);
         F.getCoulombOperator() = J_p;
     }
+
     ///////////////////////////////////////////////////////////
     ////////////////////   XC Operator   //////////////////////
     ///////////////////////////////////////////////////////////
@@ -1677,6 +1686,7 @@ void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecu
         auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_pA, shared_memory);
         F.getXCOperator() = XC_p;
     }
+    
     ///////////////////////////////////////////////////////////
     /////////////////   Exchange Operator   ///////////////////
     ///////////////////////////////////////////////////////////
@@ -1719,13 +1729,12 @@ void driver::embedding::buildEmbeddingFockOperator(const json &json_fock, Molecu
     auto smooth_prec = json_fock["nuclear_operator"]["smooth_prec"];
     auto shared_memory = json_fock["nuclear_operator"]["shared_memory"];
     NuclearOperator V_pA(nucleiA, proj_prec, smooth_prec, shared_memory, nuc_model);
-    V_pA.setup(1e-5);
+    V_pA.setup(proj_prec);
     double E_nuc_A = V_pA.trace(*Phi_pB).real();
     V_pA.clear();
+
     double E_nuc_nuc = chemistry::compute_nuclear_repulsion(nucleiA, nucleiB);
     double E_totalB = molB.getSCFEnergy().getTotalEnergy();
-    std::cout << "E_nuc_A (const)    : " << E_nuc_A << " Ha" << std::endl;
-    std::cout << "E_nuc_nuc (const)  : " << E_nuc_nuc << " Ha" << std::endl;
     
     F.build(exx, E_nuc_A, E_nuc_nuc, E_totalB);
 }
