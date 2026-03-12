@@ -322,15 +322,6 @@ User input reference
   
     **Type** ``str``
   
-<<<<<<< HEAD
- :WaveFunction: Define the wavefunction method. 
-
-  :red:`Keywords`
-   :method: Wavefunction method. See predicates for valid methods. ``hf``, ``hartreefock`` and ``hartree-fock`` all mean the same thing, while ``lda`` is an alias for ``svwn5``. You can set a non-standard DFT functional (e.g. varying the amount of exact exchange) by choosing ``dft`` and specifing the functional(s) in the ``DFT`` section below. 
-  
-    **Type** ``str``
-  
-=======
  :Molecule2: Define second molecule for embedding. 
 
   :red:`Keywords`
@@ -368,7 +359,6 @@ User input reference
   
     **Type** ``str``
   
->>>>>>> added second molecule to input_parser; new embedding section in driver
     **Predicates**
       - ``value.lower() in ['core', 'hartree', 'hf', 'hartreefock', 'hartree-fock', 'dft', 'lda', 'svwn3', 'svwn5', 'pbe', 'pbe0', 'bpw91', 'bp86', 'b3p86', 'b3p86-g', 'blyp', 'b3lyp', 'b3lyp-g', 'olyp', 'kt1', 'kt2', 'kt3']``
   
@@ -405,7 +395,6 @@ User input reference
     **Predicates**
       - ``value.lower() in ['point_like', 'point_parabola', 'point_minimal', 'finite_gaussian', 'finite_sphere']``
   
-<<<<<<< HEAD
  :Pseudopotential: Define the pseudopotentials. 
 
   :red:`Keywords`
@@ -424,11 +413,6 @@ User input reference
  :ZORA: Define required parameters for the ZORA Hamiltonian. 
 
   :red:`Keywords`
-=======
- :ZORA: Define required parameters for the ZORA Hamiltonian. 
-
-  :red:`Keywords`
->>>>>>> added second molecule to input_parser; new embedding section in driver
    :include_nuclear: Include the nuclear potential ``V_nuc`` in the ZORA potential. 
   
     **Type** ``bool``
@@ -461,6 +445,12 @@ User input reference
     **Type** ``float``
   
     **Default** ``0.0``
+  
+   :xc_library: Runs Libxc or XCFun 
+  
+    **Type** ``str``
+  
+    **Default** ``xcfun``
   
    :functionals: List of density functionals with numerical coefficient. E.g. for PBE0 ``EXX 0.25``, ``PBEX 0.75``, ``PBEC 1.0``, see XCFun documentation <https://xcfun.readthedocs.io/>_. 
   
@@ -729,11 +719,7 @@ User input reference
   
     **Default** ``initial_guess/y_b``
   
-<<<<<<< HEAD
    :cube_vectors: Directory where cube vectors are stored for MRChem calculation. 
-=======
-   :cube_vectors: Directory where cube vectors are stored for mrchem calculation. 
->>>>>>> added second molecule to input_parser; new embedding section in driver
   
     **Type** ``str``
   
@@ -805,18 +791,13 @@ User input reference
   
     **Default** ``-1.0``
   
-<<<<<<< HEAD
    :guess_type: Type of initial guess for ground state orbitals. ``chk`` restarts a previous calculation which was dumped using the ``write_checkpoint`` keyword. This will load MRA and electron spin configuration directly from the checkpoint files, which are thus required to be identical in the two calculations. ``mw`` will start from final orbitals in a previous calculation written using the ``write_orbitals`` keyword. The orbitals will be re-projected into the new computational setup, which means that the electron spin configuration and MRA can be different in the two calculations. ``gto`` reads precomputed GTO orbitals (requires extra non-standard input files for basis set and MO coefficients). ``core`` and ``sad`` will diagonalize the Fock matrix in the given AO basis (SZ, DZ, TZ or QZ) using a Core or Superposition of Atomic Densities Hamiltonian, respectively. ``cube`` will start from orbitals saved in cubefiles from external calculations. ``nao`` will start from orbitals saved in NAO format from external calculations.  It also allows for some mixing iterations to converge the initial guess within the nao basis. 
-=======
-   :guess_type: Type of initial guess for ground state orbitals. ``chk`` restarts a previous calculation which was dumped using the ``write_checkpoint`` keyword. This will load MRA and electron spin configuration directly from the checkpoint files, which are thus required to be identical in the two calculations. ``mw`` will start from final orbitals in a previous calculation written using the ``write_orbitals`` keyword. The orbitals will be re-projected into the new computational setup, which means that the electron spin configuration and MRA can be different in the two calculations. ``gto`` reads precomputed GTO orbitals (requires extra non-standard input files for basis set and MO coefficients). ``core`` and ``sad`` will diagonalize the Fock matrix in the given AO basis (SZ, DZ, TZ or QZ) using a Core or Superposition of Atomic Densities Hamiltonian, respectively. ``cube`` will start from orbitals saved in cubefiles from external calculations. 
->>>>>>> added second molecule to input_parser; new embedding section in driver
   
     **Type** ``str``
   
     **Default** ``sad_gto``
   
     **Predicates**
-<<<<<<< HEAD
       - ``value.lower() in ['mw', 'chk', 'gto', 'core_sz', 'core_dz', 'core_tz', 'core_qz', 'sad_sz', 'sad_dz', 'sad_tz', 'sad_qz', 'sad_gto', 'cube', 'nao']``
   
    :nao_directory: Directory where NAO orbitals are stored for MRChem calculation. 
@@ -836,9 +817,6 @@ User input reference
     **Type** ``float``
   
     **Default** ``0.4``
-=======
-      - ``value.lower() in ['mw', 'chk', 'gto', 'core_sz', 'core_dz', 'core_tz', 'core_qz', 'sad_sz', 'sad_dz', 'sad_tz', 'sad_qz', 'sad_gto', 'cube']``
->>>>>>> added second molecule to input_parser; new embedding section in driver
   
    :write_checkpoint: Write orbitals to disk in each iteration, file name ``<path_checkpoint>/phi_scf_idx_<0..N>``. Can be used as ``chk`` initial guess in subsequent calculations. Note: must be given in quotes if there are slashes in the path "path/to/checkpoint". 
   
@@ -876,15 +854,12 @@ User input reference
   
     **Default** ``True``
   
-<<<<<<< HEAD
    :deltascf_method: Method to use for a DeltaSCF calculation. Options are ``none`` for a normal SCF run, ``MOM`` for a run using the MOM method and ``IMOM`` for a run using the IMOM method. 
   
     **Type** ``str``
   
     **Default** ``none``
   
-=======
->>>>>>> added second molecule to input_parser; new embedding section in driver
    :write_orbitals: Write final orbitals to disk, file name ``<path_orbitals>/phi_<p/a/b>_scf_idx_<0..Np/Na/Nb>``. Can be used as ``mw`` initial guess in subsequent calculations. 
   
     **Type** ``bool``
@@ -1189,7 +1164,6 @@ User input reference
   
     **Default** ``0.005``
   
-<<<<<<< HEAD
  :OrbitalOccupancies: Modify the default orbital occupancies in order to perform a DeltaSCF calculation. 
 
   :red:`Keywords`
@@ -1199,8 +1173,6 @@ User input reference
   
     **Default** ````
   
-=======
->>>>>>> added second molecule to input_parser; new embedding section in driver
  :Constants: Physical and mathematical constants used by MRChem
 
   :red:`Keywords`
