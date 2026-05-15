@@ -24,24 +24,37 @@ class pyparsing_test:
         Context manager to be used when writing unit tests that modify pyparsing config values:
         - packrat parsing
         - bounded recursion parsing
-        - default whitespace characters.
+        - default whitespace characters
         - default keyword characters
         - literal string auto-conversion class
-        - __diag__ settings
+        - ``__diag__`` settings
 
-        Example::
+        Example:
 
-            with reset_pyparsing_context():
-                # test that literals used to construct a grammar are automatically suppressed
-                ParserElement.inlineLiteralsUsing(Suppress)
+        .. testcode::
 
-                term = Word(alphas) | Word(nums)
-                group = Group('(' + term[...] + ')')
+            ppt = pyparsing.pyparsing_test
 
-                # assert that the '()' characters are not included in the parsed tokens
-                self.assertParseAndCheckList(group, "(abc 123 def)", ['abc', '123', 'def'])
+            class MyTestClass(ppt.TestParseResultsAsserts):
+                def test_literal(self):
+                    with ppt.reset_pyparsing_context():
+                        # test that literals used to construct
+                        # a grammar are automatically suppressed
+                        ParserElement.inline_literals_using(Suppress)
 
-            # after exiting context manager, literals are converted to Literal expressions again
+                        term = Word(alphas) | Word(nums)
+                        group = Group('(' + term[...] + ')')
+
+                        # assert that the '()' characters
+                        # are not included in the parsed tokens
+                        self.assertParseAndCheckList(
+                            group,
+                            "(abc 123 def)",
+                            ['abc', '123', 'def']
+                        )
+
+                    # after exiting context manager, literals
+                    # are converted to Literal expressions again
         """
 
         def __init__(self):
@@ -145,7 +158,7 @@ class pyparsing_test:
         ):
             """
             Convenience wrapper assert to test a parser element and input string, and assert that
-            the resulting ``ParseResults.asList()`` is equal to the ``expected_list``.
+            the resulting :meth:`ParseResults.as_list` is equal to the ``expected_list``.
             """
             result = expr.parse_string(test_string, parse_all=True)
             if verbose:
@@ -159,7 +172,7 @@ class pyparsing_test:
         ):
             """
             Convenience wrapper assert to test a parser element and input string, and assert that
-            the resulting ``ParseResults.asDict()`` is equal to the ``expected_dict``.
+            the resulting :meth:`ParseResults.as_dict` is equal to the ``expected_dict``.
             """
             result = expr.parse_string(test_string, parseAll=True)
             if verbose:
@@ -172,13 +185,20 @@ class pyparsing_test:
             self, run_tests_report, expected_parse_results=None, msg=None
         ):
             """
-            Unit test assertion to evaluate output of ``ParserElement.runTests()``. If a list of
-            list-dict tuples is given as the ``expected_parse_results`` argument, then these are zipped
-            with the report tuples returned by ``runTests`` and evaluated using ``assertParseResultsEquals``.
-            Finally, asserts that the overall ``runTests()`` success value is ``True``.
+            Unit test assertion to evaluate output of
+            :meth:`~ParserElement.run_tests`.
 
-            :param run_tests_report: tuple(bool, [tuple(str, ParseResults or Exception)]) returned from runTests
-            :param expected_parse_results (optional): [tuple(str, list, dict, Exception)]
+            If a list of list-dict tuples is given as the
+            ``expected_parse_results`` argument, then these are zipped
+            with the report tuples returned by ``run_tests()``
+            and evaluated using :meth:`assertParseResultsEquals`.
+            Finally, asserts that the overall
+            `:meth:~ParserElement.run_tests` success value is ``True``.
+
+            :param run_tests_report: the return value from :meth:`ParserElement.run_tests`
+            :type run_tests_report: tuple[bool, list[tuple[str, ParseResults | Exception]]]
+            :param expected_parse_results: (optional)
+            :type expected_parse_results: list[tuple[str | list | dict | Exception, ...]]
             """
             run_test_success, run_test_results = run_tests_report
 
@@ -257,27 +277,44 @@ class pyparsing_test:
         eol_mark: str = "|",
         mark_spaces: typing.Optional[str] = None,
         mark_control: typing.Optional[str] = None,
+        *,
+        indent: typing.Union[str, int] = "",
+        base_1: bool = True,
     ) -> str:
         """
         Helpful method for debugging a parser - prints a string with line and column numbers.
-        (Line and column numbers are 1-based.)
+        (Line and column numbers are 1-based by default - if debugging a parse action,
+        pass base_1=False, to correspond to the loc value passed to the parse action.)
 
-        :param s: tuple(bool, str - string to be printed with line and column numbers
-        :param start_line: int - (optional) starting line number in s to print (default=1)
-        :param end_line: int - (optional) ending line number in s to print (default=len(s))
-        :param expand_tabs: bool - (optional) expand tabs to spaces, to match the pyparsing default
-        :param eol_mark: str - (optional) string to mark the end of lines, helps visualize trailing spaces (default="|")
-        :param mark_spaces: str - (optional) special character to display in place of spaces
-        :param mark_control: str - (optional) convert non-printing control characters to a placeholding
-                                 character; valid values:
-                                 - "unicode" - replaces control chars with Unicode symbols, such as "␍" and "␊"
-                                 - any single character string - replace control characters with given string
-                                 - None (default) - string is displayed as-is
+        :param s: string to be printed with line and column numbers
+        :param start_line: starting line number in s to print (default=1)
+        :param end_line: ending line number in s to print (default=len(s))
+        :param expand_tabs: expand tabs to spaces, to match the pyparsing default
+        :param eol_mark: string to mark the end of lines, helps visualize trailing spaces
+        :param mark_spaces: special character to display in place of spaces
+        :param mark_control: convert non-printing control characters to a placeholding
+                             character; valid values:
+                                 
+                             - ``"unicode"`` - replaces control chars with Unicode symbols, such as "␍" and "␊"
+                             - any single character string - replace control characters with given string
+                             - ``None`` (default) - string is displayed as-is
 
-        :return: str - input string with leading line numbers and column number headers
+
+        :param indent: string to indent with line and column numbers; if an int
+                       is passed, converted to ``" " * indent``
+        :param base_1: whether to label string using base 1; if False, string will be
+                       labeled based at 0
+
+        :returns: input string with leading line numbers and column number headers
+
+        .. versionchanged:: 3.2.0
+           New ``indent`` and ``base_1`` arguments.
         """
         if expand_tabs:
             s = s.expandtabs()
+        if isinstance(indent, int):
+            indent = " " * indent
+        indent = indent.expandtabs()
         if mark_control is not None:
             mark_control = typing.cast(str, mark_control)
             if mark_control == "unicode":
@@ -300,46 +337,52 @@ class pyparsing_test:
             else:
                 s = s.replace(" ", mark_spaces)
         if start_line is None:
-            start_line = 1
+            start_line = 0
         if end_line is None:
             end_line = len(s)
         end_line = min(end_line, len(s))
-        start_line = min(max(1, start_line), end_line)
+        start_line = min(max(0, start_line), end_line)
 
         if mark_control != "unicode":
-            s_lines = s.splitlines()[start_line - 1 : end_line]
+            s_lines = s.splitlines()[start_line - base_1 : end_line]
         else:
-            s_lines = [line + "␊" for line in s.split("␊")[start_line - 1 : end_line]]
+            s_lines = [
+                line + "␊" for line in s.split("␊")[start_line - base_1 : end_line]
+            ]
         if not s_lines:
             return ""
 
         lineno_width = len(str(end_line))
         max_line_len = max(len(line) for line in s_lines)
-        lead = " " * (lineno_width + 1)
+        lead = indent + " " * (lineno_width + 1)
         if max_line_len >= 99:
             header0 = (
                 lead
+                + ("" if base_1 else " ")
                 + "".join(
                     f"{' ' * 99}{(i + 1) % 100}"
-                    for i in range(max(max_line_len // 100, 1))
+                    for i in range(1 if base_1 else 0, max(max_line_len // 100, 1))
                 )
                 + "\n"
             )
         else:
             header0 = ""
         header1 = (
-            header0
+            ("" if base_1 else " ")
             + lead
             + "".join(f"         {(i + 1) % 10}" for i in range(-(-max_line_len // 10)))
             + "\n"
         )
-        header2 = lead + "1234567890" * (-(-max_line_len // 10)) + "\n"
+        digits = "1234567890"
+        header2 = (
+            lead + ("" if base_1 else "0") + digits * (-(-max_line_len // 10)) + "\n"
+        )
         return (
             header1
             + header2
             + "\n".join(
-                f"{i:{lineno_width}d}:{line}{eol_mark}"
-                for i, line in enumerate(s_lines, start=start_line)
+                f"{indent}{i:{lineno_width}d}:{line}{eol_mark}"
+                for i, line in enumerate(s_lines, start=start_line + base_1)
             )
             + "\n"
         )

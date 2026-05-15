@@ -526,6 +526,7 @@ def parse_wf_method(user_dict):
             f"Invalid wavefunction method {user_dict['WaveFunction']['method']}"
         )
 
+
     # Determine relativity name label for print outs to the output file
     relativity_name = "None"
     wf_dict = dict()
@@ -597,6 +598,7 @@ def parse_wf_method(user_dict):
     wf_dict["method_name"] = method_name
     wf_dict["method_type"] = method_type
     wf_dict["dft_funcs"] = dft_funcs
+    wf_dict["spinor_components"] = user_dict["WaveFunction"]["spinor_components"]
     return wf_dict
 
 
