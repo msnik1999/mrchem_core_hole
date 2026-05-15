@@ -132,13 +132,16 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component(int d, MomentumOperator 
     int Ni = bra.size();
     int Nj = ket.size();
     ComplexMatrix T = ComplexMatrix::Zero(Ni, Nj);
-    // MSG_INFO("calc kin mat comp start d=" << d);
+    // MSG_INFO("calc kin mat comp start braket true=" << (&bra == &ket));
 
     int nNodes = 0, sNodes = 0;
     if (&bra == &ket) {
         OrbitalVector dKet = p[d](ket);
+        // MSG_INFO("1");
         nNodes += orbital::get_n_nodes(dKet);
+        // MSG_INFO("2");
         sNodes += orbital::get_size_nodes(dKet);
+        // MSG_INFO("3");
         T = mrcpp::calc_overlap_matrix(dKet);
     } else {
         OrbitalVector dBra = p[d](bra);

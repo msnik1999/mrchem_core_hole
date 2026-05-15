@@ -256,7 +256,7 @@ ComplexMatrix initial_guess::core::diagonalize(OrbitalVector &Phi, MomentumOpera
     MSG_INFO("b");
 
     OrbitalVector VPhi = V(Phi);
-    // MSG_INFO("bbbim");
+    MSG_INFO("bbbim");
     mrcpp::print::separator(2, '-');
     ComplexMatrix t_tilde = qmoperator::calc_kinetic_matrix(p, Phi, Phi);
     for (int m = 0; m < t_tilde.rows(); m++) {
