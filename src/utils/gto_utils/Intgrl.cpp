@@ -98,14 +98,13 @@ void Intgrl::readAtomData(std::ifstream &ifs, int n_atoms, double z) {
         PeriodicTable pt;
         const Element &element = pt.getElement(sym.c_str());
 
-        auto *nuc = new Nucleus(element, coord);
-        nuc->setCharge(z);
+        auto *nuc = new Nucleus(element, z, coord);
         this->nuclei.push_back(nuc);
     }
 }
 
 void Intgrl::readContractionBlock(std::ifstream &ifs, AOBasis &bas, int l) {
-    if (l > 2) MSG_ABORT("Only s, p and d orbitals are currently supported");
+    if (l > 4) MSG_ABORT("Only s, p, d, f and g orbitals are currently supported");
     int nprim, nctr;
     ifs >> nprim;
     ifs >> nctr;

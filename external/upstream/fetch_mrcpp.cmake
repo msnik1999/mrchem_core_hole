@@ -39,7 +39,7 @@ else()
     GIT_REPOSITORY
     https://github.com/MRChemSoft/mrcpp.git
     GIT_TAG
-    cec3cc96d578cdf77e8e9222cb641ab3e9ff7236
+    ad080014842f898e95292983a5cea4feb539abbd
   )
 
   FetchContent_GetProperties(mrcpp_sources)
@@ -49,7 +49,7 @@ else()
   set(ENABLE_MPI ${ENABLE_MPI})
   set(Eigen3_DIR ${eigen3_sources_BINARY_DIR})
   set(PYTHON_INTERPRETER ${Python_EXECUTABLE})
-  set(ENABLE_TESTS ON CACHE BOOL "" FORCE)
+  set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
   set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 
   if(NOT mrcpp_sources_POPULATED)

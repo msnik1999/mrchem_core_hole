@@ -84,6 +84,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         print_utils::text(0, "Screening   ", print_utils::dbl_to_str(screen, 5, true) + " StdDev");
         print_utils::text(0, "Restricted  ", (restricted) ? "True" : "False");
         print_utils::text(0, "Functional  ", "LDA (SVWN5)");
+        print_utils::text(0, "XC Library  ", (mrdft::Factory::libxc) ? "LibXC" : "XCFun");
         print_utils::text(0, "AO basis    ", "Hydrogenic orbitals");
         print_utils::text(0, "Zeta quality", std::to_string(zeta));
         mrcpp::print::separator(0, '~', 2);
@@ -99,12 +100,11 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         xc_factory.setFunctional("VWN5C", 1.0);
         auto mrdft_p = xc_factory.build();
 
-        MomentumOperator p(D_p);
-        NuclearOperator V_nuc(nucs, prec);
-        // MSG_INFO(" inpb = " << &V_loc.CompD[0] << " inpb2 = " << &V_loc.CompD[1] ); //à tester
-        CoulombOperator J(P_p);
-        XCOperator XC(mrdft_p);
-        RankZeroOperator V = V_nuc + J + XC;
+    MomentumOperator p(D_p);
+    NuclearOperator V_nuc(nucs, prec);
+    CoulombOperator J(P_p);
+    XCOperator XC_(mrdft_p);
+    RankZeroOperator V = V_nuc + J + XC_;
 
         auto plevel = Printer::getPrintLevel();
         if (plevel == 1) mrcpp::print::header(1, "SAD Initial Guess");
@@ -116,10 +116,10 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         std::cout << "initial_guess::sad::setup -- Projecting Coulomb density start" << std::endl;
         initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);//should be okay multicomponent-wise because densities are always scalar
 
-        // Compute XC density
-        Density &rho_xc = XC.getDensity(DensityType::Total);
-        mrcpp::deep_copy(rho_xc, rho_j);
-        if (plevel == 1) mrcpp::print::time(1, "Projecting GTO density", t_lap);
+    // Compute XC density
+    Density &rho_xc = XC_.getDensity(DensityType::Total);
+    mrcpp::deep_copy(rho_xc, rho_j);
+    if (plevel == 1) mrcpp::print::time(1, "Projecting GTO density", t_lap);
 
         // Project AO basis of hydrogen functions
         t_lap.start();
@@ -184,7 +184,8 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
 */
 bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen, const Nuclei &nucs, int n_components) {
     if (Phi.size() == 0) return false;
-    auto restricted = (orbital::size_singly(Phi)) ? false : true;
+
+    auto restricted = (orbital::size_doubly(Phi)) ? true : false;
     mrcpp::print::separator(0, '~');
     print_utils::text(0, "Calculation ", "Compute initial orbitals");
     print_utils::text(0, "Method      ", "Diagonalize SAD Hamiltonian");
@@ -192,6 +193,7 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
     print_utils::text(0, "Screening   ", print_utils::dbl_to_str(screen, 5, true) + " StdDev");
     print_utils::text(0, "Restricted  ", (restricted) ? "True" : "False");
     print_utils::text(0, "Functional  ", "LDA (SVWN5)");
+    print_utils::text(0, "XC Library  ", (mrdft::Factory::libxc) ? "LibXC" : "XCFun");
     print_utils::text(0, "AO basis    ", "3-21G");
     mrcpp::print::separator(0, '~', 2);
 
@@ -208,8 +210,8 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
     MomentumOperator p(D_p);
     NuclearOperator V_nuc(nucs, prec);
     CoulombOperator J(P_p);
-    XCOperator XC(mrdft_p);
-    RankZeroOperator V = V_nuc + J + XC;
+    XCOperator XC_(mrdft_p);
+    RankZeroOperator V = V_nuc + J + XC_;
 
     auto plevel = Printer::getPrintLevel();
     if (plevel == 1) mrcpp::print::header(1, "SAD Initial Guess");
@@ -221,7 +223,7 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
     initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);
 
     // Compute XC density
-    Density &rho_xc = XC.getDensity(DensityType::Total);
+    Density &rho_xc = XC_.getDensity(DensityType::Total);
     mrcpp::deep_copy(rho_xc, rho_j);
     if (plevel == 1) mrcpp::print::time(1, "Projecting GTO density", t_lap);
 

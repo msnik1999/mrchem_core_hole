@@ -56,7 +56,7 @@ def match_only_at_col(n: int) -> ParseAction:
     return verify_col
 
 
-def replace_with(repl_str: Any) -> ParseAction:
+def replace_with(repl_str: str) -> ParseAction:
     """
     Helper method for common parse actions that simply return
     a literal value.  Especially useful when used with
@@ -77,7 +77,7 @@ def replace_with(repl_str: Any) -> ParseAction:
 
 
 def remove_quotes(s: str, l: int, t: ParseResults) -> Any:
-    r"""
+    """
     Helper parse action for removing quotation marks from parsed
     quoted strings, that use a single character for quoting. For parsing
     strings that may have multiple characters, use the :class:`QuotedString`

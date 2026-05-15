@@ -323,6 +323,8 @@ class RecursiveGrammarException(Exception):
     Exception thrown by :class:`ParserElement.validate` if the
     grammar could be left-recursive; parser may need to enable
     left recursion using :class:`ParserElement.enable_left_recursion<ParserElement.enable_left_recursion>`
+
+    Deprecated: only used by deprecated method ParserElement.validate.
     """
 
     def __init__(self, parseElementList) -> None:

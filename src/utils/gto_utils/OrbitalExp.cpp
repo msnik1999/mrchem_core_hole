@@ -51,14 +51,14 @@ OrbitalExp::~OrbitalExp() {
     }
 }
 
-GaussExp<3> OrbitalExp::getMO(int i, const DoubleMatrix &M) const {
+GaussExp<3> OrbitalExp::getMO(int i, const DoubleMatrix &M, const double threshold) const {
     if (M.cols() != size()) MSG_ERROR("Size mismatch");
     GaussExp<3> mo_i;
     int n = 0;
     for (int j = 0; j < size(); j++) {
         GaussExp<3> ao_j = getAO(j);
         // ao_i.normalize();
-        if (std::abs(M(i, j)) > mrcpp::MachineZero) {
+        if (std::abs(M(i, j)) > threshold) {
             ao_j *= M(i, j);
             mo_i.append(ao_j);
             n++;
@@ -148,60 +148,189 @@ void OrbitalExp::transformToSpherical() {
             this->orbitals[n] = nullptr;
             n++;
         } else if (l == 2) {
-            for (int i = 0; i < 5; i++) {
-                if (this->orbitals[n + i]->size() != 1) { MSG_ABORT("Cannot handle contracted d orbitals"); }
-            }
-            Gaussian<3> &xx = this->orbitals[n + 0]->getFunc(0);
-            Gaussian<3> &xy = this->orbitals[n + 1]->getFunc(0);
-            Gaussian<3> &xz = this->orbitals[n + 2]->getFunc(0);
-            Gaussian<3> &yy = this->orbitals[n + 3]->getFunc(0);
-            Gaussian<3> &yz = this->orbitals[n + 4]->getFunc(0);
-            Gaussian<3> &zz = this->orbitals[n + 5]->getFunc(0);
+            int nprim = this->orbitals[n]->size();
 
-            {
-                auto *spherical = new GaussExp<3>;
-                spherical->append(xy);
-                spherical->getFunc(0).setCoef(xy.getCoef());
-                spherical->normalize();
-                tmp.push_back(spherical);
+            for (int i = 0; i < 6; i++) {
+                if (this->orbitals[n + i]->size() != nprim) { MSG_ABORT("Contracted d orbials with different number of primitives"); }
             }
-            {
-                auto *spherical = new GaussExp<3>;
-                spherical->append(yz);
-                spherical->getFunc(0).setCoef(yz.getCoef());
-                spherical->normalize();
-                tmp.push_back(spherical);
+
+            auto *sph_xy = new GaussExp<3>;
+            auto *sph_yz = new GaussExp<3>;
+            auto *sph_z2 = new GaussExp<3>;
+            auto *sph_xz = new GaussExp<3>;
+            auto *sph_x2 = new GaussExp<3>;
+
+            double sqrt3 = std::sqrt(3.0);
+
+            for (int i = 0; i < nprim; i++) {
+                Gaussian<3> &xx = this->orbitals[n + 0]->getFunc(i);
+                Gaussian<3> &xy = this->orbitals[n + 1]->getFunc(i);
+                Gaussian<3> &xz = this->orbitals[n + 2]->getFunc(i);
+                Gaussian<3> &yy = this->orbitals[n + 3]->getFunc(i);
+                Gaussian<3> &yz = this->orbitals[n + 4]->getFunc(i);
+                Gaussian<3> &zz = this->orbitals[n + 5]->getFunc(i);
+
+                sph_xy->append(xy);
+                sph_yz->append(yz);
+
+                sph_z2->append(xx);
+                sph_z2->getFunc(sph_z2->size() - 1).setCoef(-0.5 * xx.getCoef());
+                sph_z2->append(yy);
+                sph_z2->getFunc(sph_z2->size() - 1).setCoef(-0.5 * yy.getCoef());
+                sph_z2->append(zz);
+                sph_z2->getFunc(sph_z2->size() - 1).setCoef(zz.getCoef());
+
+                sph_xz->append(xz);
+
+                sph_x2->append(xx);
+                sph_x2->getFunc(sph_x2->size() - 1).setCoef(0.5 * sqrt3 * xx.getCoef());
+                sph_x2->append(yy);
+                sph_x2->getFunc(sph_x2->size() - 1).setCoef(-0.5 * sqrt3 * yy.getCoef());
             }
-            {
-                double coef = 1.0 / std::sqrt(3.0);
-                auto *spherical = new GaussExp<3>;
-                spherical->append(xx);
-                spherical->append(yy);
-                spherical->append(zz);
-                spherical->getFunc(0).setCoef(-0.5 * coef * xx.getCoef());
-                spherical->getFunc(1).setCoef(-0.5 * coef * yy.getCoef());
-                spherical->getFunc(2).setCoef(coef * zz.getCoef());
-                spherical->normalize();
-                tmp.push_back(spherical);
-            }
-            {
-                auto *spherical = new GaussExp<3>;
-                spherical->append(xz);
-                spherical->normalize();
-                tmp.push_back(spherical);
-            }
-            {
-                auto *spherical = new GaussExp<3>;
-                spherical->append(xx);
-                spherical->append(yy);
-                spherical->getFunc(0).setCoef(0.5 * xx.getCoef());
-                spherical->getFunc(1).setCoef(-0.5 * yy.getCoef());
-                spherical->normalize();
-                tmp.push_back(spherical);
-            }
+
+            tmp.push_back(sph_xy);
+            tmp.push_back(sph_yz);
+            tmp.push_back(sph_z2);
+            tmp.push_back(sph_xz);
+            tmp.push_back(sph_x2);
+
             n += 6;
+        } else if (l == 3) {
+            GaussExp<3> *sph[7];
+
+            for (int i = 0; i < 7; i++) { sph[i] = new GaussExp<3>; }
+
+            // order of cartesian f orbitals:
+            // xxx xxy xxz xyy xyz xzz yyy yyz yzz zzz
+
+            double c1 = std::sqrt(2.5), c2 = std::sqrt(15.0), c3 = std::sqrt(1.5);
+
+            // from page 211 of Molecular Electronic Structure Theory (Helgaker, et. al.)
+            double coeffs[7][10] = {
+                {0.0, 1.5 * c1, 0.0, 0.0, 0.0, 0.0, -0.5 * c1, 0.0, 0.0, 0.0},
+                {0.0, 0.0, 0.0, 0.0, c2, 0.0, 0.0, 0.0, 0.0, 0.0},
+                {0.0, -0.5 * c3, 0.0, 0.0, 0.0, 0.0, -0.5 * c3, 0.0, 2.0 * c3, 0.0},
+                {0.0, 0.0, -1.5, 0.0, 0.0, 0.0, 0.0, -1.5, 0.0, 1.0},
+                {-0.5 * c3, 0.0, 0.0, -0.5 * c3, 0.0, 2.0 * c3, 0.0, 0.0, 0.0, 0.0},
+                {0.0, 0.0, 0.5 * c2, 0.0, 0.0, 0.0, 0.0, -0.5 * c2, 0.0, 0.0},
+                {0.5 * c1, 0.0, 0.0, -1.5 * c1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            };
+
+            double normalization[10] = {15.0, 3.0, 3.0, 3.0, 1.0, 3.0, 15.0, 3.0, 3.0, 15.0};
+            for (int i = 0; i < 10; i++) { normalization[i] = std::sqrt(normalization[i] / 15.0); }
+
+            int nprim = this->orbitals[n]->size();
+
+            for (int i = 0; i < 10; i++) {
+                if (this->orbitals[n + i]->size() != nprim) { MSG_ABORT("Contracted f orbials with different number of primitives"); }
+            }
+
+            for (int i = 0; i < nprim; i++) {
+                for (int j = 0; j < 7; j++) {
+                    for (int k = 0; k < 10; k++) {
+                        if (coeffs[j][k] != 0.0) {
+                            Gaussian<3> &func = this->orbitals[n + k]->getFunc(i);
+                            sph[j]->append(func);
+                            sph[j]->getFunc(sph[j]->size() - 1).setCoef(coeffs[j][k] * normalization[k] * func.getCoef());
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < 7; i++) {
+                tmp.push_back(sph[i]);
+            }
+
+            n += 10;
+        } else if (l == 4) {
+            GaussExp<3> *sph[9];
+
+            for (int i = 0; i < 9; i++) { sph[i] = new GaussExp<3>; }
+
+            // order of cartesian g orbitals:
+            // xxxx xxxy xxxz xxyy xxyz xxzz xyyy xyyz xyzz xzzz yyyy yyyz yyzz yzzz zzzz
+            // 0    1    2    3    4    5    6    7    8    9    10   11   12   13   14
+
+            double c1 = std::sqrt(35.0), c2 = std::sqrt(35.0 * 0.5), c3 = std::sqrt(5.0), c4 = std::sqrt(2.5);
+
+            // from page 211 of Molecular Electronic Structure Theory (Helgaker, et. al.)
+            double coeffs[9][15] = {};
+            {
+                // ml = -4
+                coeffs[0][1] = 0.5 * c1;
+                coeffs[0][6] = -0.5 * c1;
+
+                // ml = -3
+                coeffs[1][4] = 1.5 * c2;
+                coeffs[1][11] = -0.5 * c2;
+
+                // ml = -2
+                coeffs[2][1] = -0.5 * c3;
+                coeffs[2][6] = -0.5 * c3;
+                coeffs[2][8] = 3.0 * c3;
+
+                // ml = -1
+                coeffs[3][4] = -1.5 * c4;
+                coeffs[3][11] = -1.5 * c4;
+                coeffs[3][13] = 2.0 * c4;
+
+                // ml = 0
+                coeffs[4][0] = 3.0 / 8.0;
+                coeffs[4][3] = 3.0 / 4.0;
+                coeffs[4][5] = -3.0;
+                coeffs[4][10] = 3.0 / 8.0;
+                coeffs[4][12] = -3.0;
+                coeffs[4][14] = 1.0;
+
+                // ml = 1
+                coeffs[5][2] = -1.5 * c4;
+                coeffs[5][7] = -1.5 * c4;
+                coeffs[5][9] = 2.0 * c4;
+
+                // ml = 2
+                coeffs[6][0] = -0.25 * c3;
+                coeffs[6][5] = 1.5 * c3;
+                coeffs[6][10] = 0.25 * c3;
+                coeffs[6][12] = -1.5 * c3;
+
+                // ml = 3
+                coeffs[7][2] = 0.5 * c2;
+                coeffs[7][7] = -1.5 * c2;
+
+                // ml = 4
+                coeffs[8][0] = 1.0 / 8.0 * c1;
+                coeffs[8][3] = -3.0 / 4.0 * c1;
+                coeffs[8][10] = 1.0 / 8.0 * c1;
+            }
+
+            double normalization[15] = {105.0, 15.0, 15.0, 9.0, 3.0, 9.0, 15.0, 3.0, 3.0, 15.0, 105.0, 15.0, 9.0, 15.0, 105.0};
+            for (int i = 0; i < 15; i++) { normalization[i] = std::sqrt(normalization[i] / 105.0); }
+
+            int nprim = this->orbitals[n]->size();
+
+            for (int i = 0; i < 15; i++) {
+                if (this->orbitals[n + i]->size() != nprim) { MSG_ABORT("Contracted g orbials with different number of primitives"); }
+            }
+
+            for (int i = 0; i < nprim; i++) {
+                for (int j = 0; j < 9; j++) {
+                    for (int k = 0; k < 15; k++) {
+                        if (coeffs[j][k] != 0.0) {
+                            Gaussian<3> &func = this->orbitals[n + k]->getFunc(i);
+                            sph[j]->append(func);
+                            sph[j]->getFunc(sph[j]->size() - 1).setCoef(coeffs[j][k] * normalization[k] * func.getCoef());
+                        }
+                    }
+                }
+            }
+
+            for (int i = 0; i < 9; i++) {
+                tmp.push_back(sph[i]);
+            }
+
+            n += 15;
         } else {
-            MSG_ABORT("Only s, p, and d orbitals are supported");
+            MSG_ABORT("Only s, p, d, f and g orbitals are supported");
         }
     }
     for (int i = 0; i < nOrbs; i++) {

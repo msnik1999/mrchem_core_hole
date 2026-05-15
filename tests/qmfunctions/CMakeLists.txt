@@ -4,24 +4,30 @@ target_sources(mrchem-tests
     ${CMAKE_CURRENT_SOURCE_DIR}/density.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/orbital.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/orbital_vector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/spherical_harmonics.cpp
+  )
+
+add_Catch_test(
+  NAME spherical_harmonics
+  LABELS "spherical_harmonics;short"
   )
 
 add_Catch_test(
   NAME qmfunction
-  LABELS "qmfunction"
+  LABELS "qmfunction;short"
   )
 
 add_Catch_test(
   NAME density
-  LABELS "density"
+  LABELS "density;short"
   )
 
 add_Catch_test(
   NAME orbital
-  LABELS "orbital"
+  LABELS "orbital;short"
   )
 
 add_Catch_test(
   NAME orbital_vector
-  LABELS "orbital_vector"
+  LABELS "orbital;vector;short"
   )

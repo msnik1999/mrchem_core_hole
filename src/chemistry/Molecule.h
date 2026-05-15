@@ -49,6 +49,7 @@
 #include "properties/NMRShielding.h"
 #include "properties/OrbitalEnergies.h"
 #include "properties/Polarizability.h"
+#include "properties/PopulationAnalysis.h"
 #include "properties/QuadrupoleMoment.h"
 #include "properties/SCFEnergy.h"
 #include "qmfunctions/Orbital.h"
@@ -85,10 +86,42 @@ public:
     mrcpp::Coord<3> calcCenterOfMass() const;
     mrcpp::Coord<3> calcCenterOfCharge() const;
 
+    /**
+     * @brief get all nuclei
+     */
     auto &getNuclei() { return this->nuclei; }
+
+    /**
+     * @brief get_pseudo_potential_nuclei
+     */
+    Nuclei getPseudoPotentialNuclei() const;
+
+
+    /**
+     * @brief return true if the molecule has a pseudopotential, false otherwise
+     */
+    bool hasPseudopotential() const;
+
+    /**
+     * @brief return true if the molecule has a NLCC pseudopotential, false otherwise
+     */
+    bool hasNLCCPseudopotential() const;
+
+    /**
+     * @brief return trun if the molecule has a pseudopotential with projectors, false otherwise
+     */
+    bool hasProjectorPseudopotential() const;
+
+    /**
+     * @brief get all electron nuclei
+     */
+    Nuclei getAllElectronNuclei() const;
+
+
     auto &getOrbitals() { return *this->orbitals_0; }
     auto &getOrbitalsX() { return *this->orbitals_x; }
     auto &getOrbitalsY() { return *this->orbitals_y; }
+    auto &getOrbitalsMom() { return *this->orbitals_mom; }
     auto &getCavity() { return *this->cavity; }
     auto &getFockMatrix() { return this->fock_matrix; }
 
@@ -96,11 +129,13 @@ public:
     const auto &getOrbitals() const { return *this->orbitals_0; }
     const auto &getOrbitalsX() const { return *this->orbitals_x; }
     const auto &getOrbitalsY() const { return *this->orbitals_y; }
+    const auto &getOrbitalsMom() const { return *this->orbitals_mom; }
     const auto &getFockMatrix() const { return this->fock_matrix; }
 
     auto getOrbitals_p() const { return this->orbitals_0; }
     auto getOrbitalsX_p() const { return this->orbitals_x; }
     auto getOrbitalsY_p() const { return this->orbitals_y; }
+    auto getOrbitalsMom_p() const { return this->orbitals_mom; }
     auto getCavity_p() const { return this->cavity; }
 
     nlohmann::json json() const;
@@ -120,6 +155,13 @@ public:
     NMRShielding &getNMRShielding(const std::string &id) { return this->nmr_shielding.at(id); }
     GeometricDerivative &getGeometricDerivative(const std::string &id) { return this->geometric_derivative.at(id); }
     HirshfeldCharges &getHirshfeldCharges(const std::string &id) { return this->hirshfeld_charges.at(id); }
+    PopulationAnalysis &getPopulationAnalysis(const std::string &id) { return this->population_analysis.at(id); }
+    
+    void calculateOrbitalPositions();
+    void printOrbitalPositions() const;
+    ComplexVector getOrbitalPositionsX() const { return this->OrbitalPositionsX; } 
+    ComplexVector getOrbitalPositionsY() const { return this->OrbitalPositionsY; } 
+    ComplexVector getOrbitalPositionsZ() const { return this->OrbitalPositionsZ; } 
 
     PropertyMap<DipoleMoment> &getDipoleMoments() { return this->dipole; }
     PropertyMap<QuadrupoleMoment> &getQuadrupoleMoments() { return this->quadrupole; }
@@ -128,6 +170,7 @@ public:
     PropertyMap<NMRShielding> &getNMRShieldings() { return this->nmr_shielding; }
     PropertyMap<GeometricDerivative> &getGeometricDerivatives() { return this->geometric_derivative; }
     PropertyMap<HirshfeldCharges> &getHirshfeldCharges() { return this->hirshfeld_charges; }
+    PropertyMap<PopulationAnalysis> &getPopulationAnalyses() { return this->population_analysis; }
 
 protected:
     int charge{0};
@@ -139,6 +182,7 @@ protected:
     std::shared_ptr<OrbitalVector> orbitals_0{std::make_shared<OrbitalVector>()};
     std::shared_ptr<OrbitalVector> orbitals_x{nullptr};
     std::shared_ptr<OrbitalVector> orbitals_y{nullptr};
+    std::shared_ptr<OrbitalVector> orbitals_mom{std::make_shared<OrbitalVector>()}; ///< Orbitals for the maximum overlap method 
 
     // Properties
     SCFEnergy energy{};
@@ -150,6 +194,10 @@ protected:
     PropertyMap<NMRShielding> nmr_shielding{};
     PropertyMap<GeometricDerivative> geometric_derivative{};
     PropertyMap<HirshfeldCharges> hirshfeld_charges{};
+    PropertyMap<PopulationAnalysis> population_analysis{};
+    ComplexVector OrbitalPositionsX{};
+    ComplexVector OrbitalPositionsY{};
+    ComplexVector OrbitalPositionsZ{};
 
     void readCoordinateFile(const std::string &file);
     void readCoordinateString(const std::vector<std::string> &coord_str);

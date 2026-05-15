@@ -1180,18 +1180,17 @@ class ParserElement(ABC):
         thus the two cannot be used together. Use ``force=True`` to disable any
         previous, conflicting settings.
         """
-        with ParserElement.packrat_cache_lock:
-            if force:
-                ParserElement.disable_memoization()
-            elif ParserElement._packratEnabled:
-                raise RuntimeError("Packrat and Bounded Recursion are not compatible")
-            if cache_size_limit is None:
-                ParserElement.recursion_memos = _UnboundedMemo()
-            elif cache_size_limit > 0:
-                ParserElement.recursion_memos = _LRUMemo(capacity=cache_size_limit)  # type: ignore[assignment]
-            else:
-                raise NotImplementedError(f"Memo size of {cache_size_limit}")
-            ParserElement._left_recursion_enabled = True
+        if force:
+            ParserElement.disable_memoization()
+        elif ParserElement._packratEnabled:
+            raise RuntimeError("Packrat and Bounded Recursion are not compatible")
+        if cache_size_limit is None:
+            ParserElement.recursion_memos = _UnboundedMemo()
+        elif cache_size_limit > 0:
+            ParserElement.recursion_memos = _LRUMemo(capacity=cache_size_limit)  # type: ignore[assignment]
+        else:
+            raise NotImplementedError(f"Memo size of {cache_size_limit}")
+        ParserElement._left_recursion_enabled = True
 
     @staticmethod
     def enable_packrat(
@@ -3362,6 +3361,11 @@ class Regex(Token):
         asGroupList: bool = False,
         asMatch: bool = False,
     ) -> None:
+        """The parameters ``pattern`` and ``flags`` are passed
+        to the ``re.compile()`` function as-is. See the Python
+        `re module <https://docs.python.org/3/library/re.html>`_ module for an
+        explanation of the acceptable patterns and flags.
+        """
         super().__init__()
         asGroupList = asGroupList or as_group_list
         asMatch = asMatch or as_match
@@ -5601,14 +5605,24 @@ class ZeroOrMore(_MultipleMatch):
 
 
 class DelimitedList(ParseElementEnhance):
-    """Helper to define a delimited list of expressions - the delimiter
-    defaults to ','. By default, the list elements and delimiters can
-    have intervening whitespace, and comments, but this can be
-    overridden by passing ``combine=True`` in the constructor. If
-    ``combine`` is set to ``True``, the matching tokens are
-    returned as a single token string, with the delimiters included;
-    otherwise, the matching tokens are returned as a list of tokens,
-    with the delimiters suppressed.
+    def __init__(
+        self,
+        expr: Union[str, ParserElement],
+        delim: Union[str, ParserElement] = ",",
+        combine: bool = False,
+        min: typing.Optional[int] = None,
+        max: typing.Optional[int] = None,
+        *,
+        allow_trailing_delim: bool = False,
+    ) -> None:
+        """Helper to define a delimited list of expressions - the delimiter
+        defaults to ','. By default, the list elements and delimiters can
+        have intervening whitespace, and comments, but this can be
+        overridden by passing ``combine=True`` in the constructor. If
+        ``combine`` is set to ``True``, the matching tokens are
+        returned as a single token string, with the delimiters included;
+        otherwise, the matching tokens are returned as a list of tokens,
+        with the delimiters suppressed.
 
     If ``allow_trailing_delim`` is set to True, then the list may end with
     a delimiter.
