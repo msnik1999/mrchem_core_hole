@@ -205,13 +205,13 @@ RankZeroOperator &RankZeroOperator::operator-=(const RankZeroOperator &O) {
  * applied with the given precision. Must be called prior to application.
  */
 void RankZeroOperator::setup(double prec) {
-    std::cout << "RankZeroOperator::setup -- Setting up operator " << this->name() << " with precision " << prec << std::endl;
+    // std::cout << "RankZeroOperator::setup -- Setting up operator " << this->name() << " with precision " << prec << std::endl;
     for (auto &i : this->oper_exp) {
-        std::cout << "RankZeroOperator::setup -- operator expansion" << std::endl;
+        // std::cout << "RankZeroOperator::setup -- operator expansion" << std::endl;
         for (int j = 0; j < i.size(); j++) { 
-            std::cout << "RankZeroOperator::setup -- operator: "<< j << " " << i[j] << std::endl;
+            // std::cout << "RankZeroOperator::setup -- operator: "<< j << " " << i[j] << std::endl;
             i.at(j)->setup(prec); //calls QMOperator::setup
-            std::cout << "RankZeroOperator::setup -- operator setup done tut" << std::endl;
+            // std::cout << "RankZeroOperator::setup -- operator setup done tut" << std::endl;
         }
     }
 }
@@ -259,30 +259,30 @@ ComplexDouble RankZeroOperator::dagger(const mrcpp::Coord<3> &r) const {
  * NOT YET IMPLEMENTED- SEE spinor_utils.cpp IN MRCPP IF YOU WANT TO IMPLEMENT 4 COMPONENT STUFF For 4 component (Dirac) spinors, alpha = 0,1,2,3 corresponds to indentiy, alpha_x, y and z respectively, and alpha = 4 corresponds to the beta matrix
  */
 Orbital RankZeroOperator::operator()(Orbital inp, int alpha) {
-    MSG_INFO("aa");
+    // MSG_INFO("aa");
     if (inp.getNNodes() == 0) return inp.paramCopy(false);
     // apply operator to input orbital
     RankZeroOperator &O = *this;
-    MSG_INFO("bb");
+    // MSG_INFO("bb");
     std::vector<mrcpp::CompFunction<3>> func_vec;
-    MSG_INFO("cc");
+    // MSG_INFO("cc");
     std::vector<ComplexDouble> coef_vec = getCoefVector();
-    MSG_INFO("dd" << " name=" << O.name() << " size="<< O.size());
+    // MSG_INFO("dd" << " name=" << O.name() << " size="<< O.size());
     for (int n = 0; n < O.size(); n++) {
-        MSG_INFO(O.size() << " ee " << n << " name = " << O.name());
+        // MSG_INFO(O.size() << " ee " << n << " name = " << O.name());
         Orbital out_n = O.applyOperTerm(n, inp);
         func_vec.push_back(out_n);
     }
-    MSG_INFO("ff");
+    // MSG_INFO("ff");
     Orbital out = inp.paramCopy(true);
-    MSG_INFO("gg" << out.Ncomp());
+    // MSG_INFO("gg" << out.Ncomp());
     mrcpp::linear_combination(out, coef_vec, func_vec, -1.0);
-    MSG_INFO("hh");
+    // MSG_INFO("hh");
     // apply the alpha (Pauli) matrix to the result; NB: 4C behaviour needs to be implemented
     Orbital out_true; //debug test
     mrcpp::deep_copy(out_true, out); //debug test
     mrcpp::apply_Pauli(out_true, out, alpha); 
-    MSG_INFO("ii end");
+    // MSG_INFO("ii end");
     // return out;
     return out_true; //debug test
 }
@@ -325,7 +325,7 @@ OrbitalVector RankZeroOperator::operator()(OrbitalVector &inp, int alpha) {
         // out_i.defreal(); //debug test doesn't help
         // out_i.alloc(inp[0].Ncomp()); //debug test doesn't help
         if (mrcpp::mpi::my_func(inp[i])) {
-            MSG_INFO("MPI");
+            // MSG_INFO("MPI");
             out_i = O(inp[i], alpha);
             // Orbital out_tmp; //debug test
             // out_tmp.defreal(); //debug test doesn't help
@@ -335,7 +335,7 @@ OrbitalVector RankZeroOperator::operator()(OrbitalVector &inp, int alpha) {
             // mrcpp::apply_Pauli(out_i, out_tmp, alpha); //problème dans ça?
             // out_i = mrcpp::apply_alpha(out_tmp, alpha); //debug test
         } else {
-            MSG_INFO("not MPi");
+            // MSG_INFO("not MPi");
             out_i = inp[i].paramCopy(false);
             // mrcpp::apply_Pauli(out_i, inp[i], alpha); //Remove? if the orbital is not on the current MPI rank, we prolly shouldn't do anything to it
         }
@@ -418,19 +418,19 @@ ComplexDouble RankZeroOperator::dagger(Orbital bra, Orbital ket) {
  */
 ComplexMatrix RankZeroOperator::operator()(OrbitalVector &bra, OrbitalVector &ket) {
     Timer t1;
-    MSG_INFO("aa");
+    // MSG_INFO("aa");
     RankZeroOperator &O = *this;
-    MSG_INFO("bb");
+    // MSG_INFO("bb");
     OrbitalVector Oket = O(ket);
-    MSG_INFO("cc");
+    // MSG_INFO("cc");
     ComplexMatrix out = orbital::calc_overlap_matrix(bra, Oket);
-    MSG_INFO("dd");
+    // MSG_INFO("dd");
     std::stringstream o_name;
-    MSG_INFO("ee");
+    // MSG_INFO("ee");
     o_name << "<i|" << O.name() << "|j>";
-    MSG_INFO("ff");
+    // MSG_INFO("ff");
     mrcpp::print::tree(2, o_name.str(), orbital::get_n_nodes(Oket), orbital::get_size_nodes(Oket), t1.elapsed());
-    MSG_INFO("gg end");
+    // MSG_INFO("gg end");
     return out;
 }
 
@@ -550,22 +550,22 @@ ComplexDouble RankZeroOperator::trace(const Nuclei &nucs) {
 Orbital RankZeroOperator::applyOperTerm(int n, const Orbital &inp) {
     if (n >= this->oper_exp.size()) MSG_ABORT("Invalid oper term");
     Orbital out = inp.paramCopy(true);
-    MSG_INFO("s");
+    // MSG_INFO("s");
 
     if (inp.getNNodes() == 0) return out;
     int i = 0;
     for (auto O_nm : this->oper_exp[n]) {
         if (O_nm == nullptr) MSG_ABORT("Invalid oper term");
         if (i==0) {
-            MSG_INFO("n "<<i);
+            // MSG_INFO("n "<<i);
             out = O_nm->apply(inp);
         } else {
-            MSG_INFO("o "<< i);
+            // MSG_INFO("o "<< i);
             out = O_nm->apply(out);
         }
         i++;
     }
-    MSG_INFO("end")
+    // MSG_INFO("end")
     return out;
 }
 

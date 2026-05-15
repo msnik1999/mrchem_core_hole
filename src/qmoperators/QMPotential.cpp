@@ -72,7 +72,6 @@ QMPotential::QMPotential(const QMPotential &inp)
  */
 Orbital QMPotential::apply(Orbital inp) {
     if (this->apply_prec < 0.0) MSG_ERROR("Uninitialized operator");
-    MSG_INFO("a");
     Orbital out;
     calc(out, inp, false);
 
@@ -139,7 +138,13 @@ void QMPotential::calc(mrcpp::CompFunction<3> &out, mrcpp::CompFunction<3> &inp,
     double coef = 1.0;
     mrcpp::copy_grid(out, inp);
     // mrcpp::multiply(prec, out, coef, inp, V, adap);
-    mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); //modifier pour que ça corresponde à la bonne fonction
+    // if (inp.Ncomp() == V.Ncomp()){
+    //     mrcpp::multiply(out, inp, V, prec, false, false, dagger);
+    // } else {
+    //     //single component potential 
+    //     MSG_INFO("Single component potential for some reason");
+    mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); 
+    // }
 }
 
 } // namespace mrchem

@@ -209,6 +209,7 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
                     int comp = 0; // component index
                     // by Aufbau, half of the atoms will be alpha (comp index 0) and half beta (comp index 1) 
                     // Warning: only 1-2 components methods are implemented
+                    if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT SETUP FOR MORE THAN 2 COMPONENTS")}
                     if (n_components > 1) {int comp = i%2;}; 
                     mrcpp::project(Phi.back(), h_func, prec, comp); 
                     if (std::abs(Phi.back().norm() - 1.0) > 0.01) MSG_WARN("AO not normalized!");
@@ -231,11 +232,12 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
 void initial_guess::core::rotate_orbitals(OrbitalVector &Psi, double prec, ComplexMatrix &U, OrbitalVector &Phi) {
     if (Psi.size() == 0) return;
 
-    std::cout << "initial_guess::core::rotate_orbitals: Phi (1st argument) norm before rotation = " << Phi[0].norm() << "Psi (2nd argument) norm before rotation = " << Psi[0].norm()<< std::endl;
+    MSG_INFO("ROTATO ROTATO");
 
     Timer t_tot;
     mrcpp::rotate(Phi, U, Psi, prec);
     mrcpp::print::time(1, "Rotating orbitals", t_tot);
+    MSG_INFO("Rotadone");
 }
 
 ComplexMatrix initial_guess::core::diagonalize(OrbitalVector &Phi, MomentumOperator &p, RankZeroOperator &V) {
@@ -254,7 +256,7 @@ ComplexMatrix initial_guess::core::diagonalize(OrbitalVector &Phi, MomentumOpera
     MSG_INFO("b");
 
     OrbitalVector VPhi = V(Phi);
-
+    // MSG_INFO("bbbim");
     mrcpp::print::separator(2, '-');
     ComplexMatrix t_tilde = qmoperator::calc_kinetic_matrix(p, Phi, Phi);
     for (int m = 0; m < t_tilde.rows(); m++) {

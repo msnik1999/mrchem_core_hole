@@ -64,6 +64,7 @@ double qmoperator::calc_kinetic_trace(MomentumOperator &p, OrbitalVector &Phi) {
 
 ComplexDouble qmoperator::calc_kinetic_trace(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &Phi, bool spinorial) {
     ComplexDouble out = {0.0, 0.0};
+    // MSG_INFO("kin trace start");
     int alpha_index = 0; // for spinorial operators, the kinetic operator is of the form sigma p V sigma p, with sigma being a Pauli matrix. alpha_index represents which Pauli matrix is used (x,y or z). For non-spinorial operators, it is unused.
     {   
         if (spinorial) alpha_index = 1; // if spinorial, we use sigma_x for the kinetic operator, but it is arbitrary which Pauli matrix we use, as long as it is the same on the left and right of V.
@@ -109,13 +110,17 @@ ComplexMatrix qmoperator::calc_kinetic_matrix(MomentumOperator &p, OrbitalVector
  * of symmetry and getting away with only first-derivative operators.
  */
 ComplexMatrix qmoperator::calc_kinetic_matrix(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket, bool spinorial) {
+    // MSG_INFO("Computing kinetic matrix with ZORA/AZORA correction");
     ComplexMatrix T_x = qmoperator::calc_kinetic_matrix_component(0, p, V, bra, ket, spinorial); 
+    // MSG_INFO("x direction ok");
     ComplexMatrix T_y = qmoperator::calc_kinetic_matrix_component(1, p, V, bra, ket, spinorial);
+    // MSG_INFO("y direction ok");
     ComplexMatrix T_z = qmoperator::calc_kinetic_matrix_component(2, p, V, bra, ket, spinorial);
     return T_x + T_y + T_z;
 }
 
 ComplexMatrix qmoperator::calc_kinetic_matrix_symmetrized(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket, bool spinorial) {
+    // MSG_INFO("calc kin mat symm");
     ComplexMatrix T_x = qmoperator::calc_kinetic_matrix_component_symmetrized(0, p, V, bra, ket, spinorial);
     ComplexMatrix T_y = qmoperator::calc_kinetic_matrix_component_symmetrized(1, p, V, bra, ket, spinorial);
     ComplexMatrix T_z = qmoperator::calc_kinetic_matrix_component_symmetrized(2, p, V, bra, ket, spinorial);
@@ -127,6 +132,7 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component(int d, MomentumOperator 
     int Ni = bra.size();
     int Nj = ket.size();
     ComplexMatrix T = ComplexMatrix::Zero(Ni, Nj);
+    // MSG_INFO("calc kin mat comp start d=" << d);
 
     int nNodes = 0, sNodes = 0;
     if (&bra == &ket) {
@@ -185,29 +191,62 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component(int d, MomentumOperator 
     int Ni = bra.size();
     int Nj = ket.size();
     ComplexMatrix T = ComplexMatrix::Zero(Ni, Nj);
+    // MSG_INFO("calc kin mat comp start d=" << d << " Ni=" << Ni << " Nj=" << Nj);
 
     //in case of spinorial orbitals, the kinetic operator is sigma dot p, we therefore need to set the index of the pauli matrix to use
     int pauli_index = 0; //identity (fits non-spinorial case)
     if (spinorial) pauli_index = d + 1; //Pauli index is 1 for x, 2 for y and 3 for z, whereas the momentum operator index is 0 for x, 1 for y and 2 for z, so we need to add 1 to get the correct Pauli matrix.
 
+    // MSG_INFO("spinorial done");
     int nNodes = 0, sNodes = 0;
     if (&bra == &ket) {
-        OrbitalVector dKet = p[d](ket, pauli_index);
+        // MSG_INFO("bra ket same");
+        OrbitalVector dKet = p[d](ket, pauli_index); 
+        // MSG_INFO("bk same momentum applied");
+        // MSG_INFO("bk same dKet norm^2 = " << dKet[0].getSquareNorm());
+        
+        ComplexMatrix testKet = mrcpp::calc_overlap_matrix(dKet);
+        // MSG_INFO("bk same dket test " << testKet(0,0) << " "<< testKet(0,1) << " " << d);
+        // MSG_INFO("bk same dket test " << testKet(1,0) << " "<< testKet(1,1) << " " << d);
+        OrbitalVector dKettest = p[d](ket, 0); //debug test
+        ComplexMatrix testKet2 = mrcpp::calc_overlap_matrix(dKet); //debug test
+        // MSG_INFO("bk same dket test 2" << testKet2(0,0) << " "<< testKet2(0,1) << " " << d);
+        // MSG_INFO("bk same dket test 2" << testKet2(1,0) << " "<< testKet2(1,1) << " " << d);
+        //further debug stuff
+        ComplexMatrix Ttest = ComplexMatrix::Zero(Ni,Nj);
+        Ttest = V(dKettest, dKettest);
+        // MSG_INFO("bk same V applied test "  << Ttest(0,0) << " "<< Ttest(0,1) << " " << d);
+        // MSG_INFO("bk same V applied test "  << Ttest(1,0) << " "<< Ttest(1,1));
+        //end further debug sutff
+
+        // MSG_INFO("bk same dket done ");
         nNodes += orbital::get_n_nodes(dKet);
         sNodes += orbital::get_size_nodes(dKet);
-        T = V(dKet, dKet);
+        // MSG_INFO("bk same gotten stuff ");
+        T = V(dKet, dKet); //includes conjugation?
+        // MSG_INFO("test")
+        // MSG_INFO("bk same V applied tut "  << T(0,0) << " "<< T(0,1) << " " << d);
+        // MSG_INFO("bk same V applied tut "  << T(1,0) << " "<< T(1,1));
+        
     } else {
+        // MSG_INFO("bra ket diff ");
         OrbitalVector dBra = p[d](bra, pauli_index);
+        // MSG_INFO("bk diff bra done");
         OrbitalVector dKet = p[d](ket, pauli_index);
+        // MSG_INFO("bk diff ket done");
         nNodes += orbital::get_n_nodes(dBra);
         nNodes += orbital::get_n_nodes(dKet);
         sNodes += orbital::get_size_nodes(dBra);
         sNodes += orbital::get_size_nodes(dKet);
+        // MSG_INFO("bk diff gotten stuff");
         T = V(dBra, dKet);
+        // MSG_INFO("bk diff V applied " << T(0,0) << " " << d);
     }
+    // MSG_INFO("calc kin mat out of if statement d=" << d);
     if (d == 0) mrcpp::print::tree(2, "<i|p[x]p[x]|j>", nNodes, sNodes, timer.elapsed());
     if (d == 1) mrcpp::print::tree(2, "<i|p[y]p[y]|j>", nNodes, sNodes, timer.elapsed());
     if (d == 2) mrcpp::print::tree(2, "<i|p[z]p[z]|j>", nNodes, sNodes, timer.elapsed());
+    // MSG_INFO("end d=" << d);
     return 0.5 * T;
 }
 

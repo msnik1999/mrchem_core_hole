@@ -115,16 +115,20 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
                 success &= false;
             }
             if (phi_i.isreal()) {
-                // Refine to get accurate function values
-                mrcpp::refine_grid(phi_i.real(), 1);
-                mrcpp::project(prec, Phi[i].real(), phi_i.real());
+                for (int comp = 0; comp<Phi[i].Ncomp(); comp++) {
+                    // Refine to get accurate function values
+                    mrcpp::refine_grid(phi_i.real(comp), 1);
+                    mrcpp::project(prec, Phi[i].real(comp), phi_i.real(comp));
+                }
             }
             if (phi_i.iscomplex()) {
-                // Refine to get accurate function values
-                mrcpp::refine_grid(phi_i.complex(), 1);
-                iscomplex = true;
                 Phi[i].defcomplex();
-                mrcpp::project(prec, Phi[i].complex(), phi_i.complex());
+                for (int comp = 0; comp<Phi[i].Ncomp(); comp++) {
+                    // Refine to get accurate function values
+                    mrcpp::refine_grid(phi_i.complex(comp), 1);
+                    iscomplex = true;
+                    mrcpp::project(prec, Phi[i].complex(comp), phi_i.complex(comp));
+                }
             }
             std::stringstream o_txt;
             o_txt << std::setw(w1 - 1) << i;

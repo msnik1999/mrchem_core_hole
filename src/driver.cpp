@@ -254,7 +254,7 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
     std::cout << "driver::scf::run Fock start" << std::endl;
     FockBuilder F;
     const auto &json_fock = json_scf["fock_operator"];
-    driver::build_fock_operator(json_fock, mol, F, 0); //todo
+    driver::build_fock_operator(json_fock, mol, F, 0); 
 
     // Pre-compute internal exchange contributions
     if (F.getExchangeOperator()) F.getExchangeOperator()->setPreCompute();
@@ -273,8 +273,6 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
     const auto &json_guess = json_scf["initial_guess"];
     std::cout << "driver::scf::run Initial Guess start 2" << std::endl;
     if (scf::guess_orbitals(json_guess, mol, n_components)) {
-        //todo changer ça pour voir si ce con d'exchange marche ou si c'est trace qui foire?
-        // MSG_INFO("build fock done DaddyCoul=" << F.getCoulombOperator()->trace(*Phi_p)<< " DaddyExch=" << F.getExchangeOperator()->trace(*Phi_p));
 
         std::cout << "driver::scf::run Initial Guess start success" << std::endl;
         scf::guess_energy(json_guess, mol, F);
@@ -420,7 +418,7 @@ bool driver::scf::guess_orbitals(const json &json_guess, Molecule &mol, int n_co
 
     //remove when implemented
     MSG_INFO("tut type = " << type);
-    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto"))) {
+    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto") || (type == "mw"))) {
         MSG_ERROR("Initial guess for multi-component orbitals only implemented for SAD");
         return false;
     }
@@ -460,7 +458,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, Molecule &mol, int n_co
 }
 
 bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilder &F) {
-    std::cout << "driver::scf::guess_energy start nucsize=" << F.getNuclearOperator()->size() << std::endl;
     auto prec = json_guess["prec"];
     auto method = json_guess["method"];
     auto relativity = json_guess["relativity"];
@@ -468,8 +465,8 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     auto external_field = json_guess["external_field"];
     auto localize = json_guess["localize"];
     auto rotate = json_guess["rotate"];
-    std::cout << "driver::scf::guess_energy -- json done" << std::endl;
 
+    MSG_INFO("start");
     mrcpp::print::separator(0, '~');
     print_utils::text(0, "Calculation    ", "Compute initial energy");
     print_utils::text(0, "Method         ", method);
@@ -488,12 +485,17 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     auto &nucs = mol.getNuclei();
     auto &F_mat = mol.getFockMatrix();
 
-    std::cout << "driver::scf::guess_energy -- Fock matrix setup start" << std::endl;
+    MSG_INFO("Pre Fock init ");
+    for (Orbital phi_i: Phi) {
+        MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
+        phi_i.calcSquareNorm();
+        MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
+    }
 
     F_mat = ComplexMatrix::Zero(Phi.size(), Phi.size());
     if (localize && rotate) orbital::localize(prec, Phi, F_mat);
 
-    std::cout << "driver::scf::guess_energy -- Fock matrix setup done, orbitals localised" << std::endl;
+    MSG_INFO("Pre Fock setup");
 
     F.setup(prec);
     MSG_INFO("build fock done DaddyCoul=" << F.getCoulombOperator()->trace(Phi)<< " DaddyExch=" << F.getExchangeOperator()->trace(Phi));
@@ -504,8 +506,22 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     std::cout << "driver::scf::guess_energy -- SCF energy computed" << std::endl;
     F.clear();
 
+    MSG_INFO("pre diag");
+    for (Orbital phi_i: Phi) {
+        MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
+        phi_i.calcSquareNorm();
+        MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
+    }
+
     if (not localize && rotate) orbital::diagonalize(prec, Phi, F_mat);
     if (plevel == 1) mrcpp::print::footer(1, t_scf, 2);
+
+    MSG_INFO("post diag");
+    for (Orbital phi_i: Phi) {
+        MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
+        phi_i.calcSquareNorm();
+        MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
+    }
 
     Timer t_eps;
     mrcpp::print::header(1, "Computing orbital energies");

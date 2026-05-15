@@ -66,10 +66,10 @@ void CoulombPotentialD1::setupLocalDensity(double prec) {
     if (hasDensity()) return;
     if (this->orbitals == nullptr) MSG_ERROR("Orbitals not initialized");
 
-    MSG_INFO("Debug message");
+    // MSG_INFO("Debug message");
 
     OrbitalVector &Phi = *this->orbitals;
-    MSG_INFO("Debug message 2");
+    // MSG_INFO("Debug message 2");
     Density &rho = this->density;
 
     // This forcefully gives rho an MRA (the default one).
@@ -78,12 +78,12 @@ void CoulombPotentialD1::setupLocalDensity(double prec) {
     // MSG_INFO((mrcpp::defaultCompMRA == nullptr) ? "Density MRA is null" : "Density MRA is not null"); 
     
 
-    MSG_INFO("Debug message 3");
+    // MSG_INFO("Debug message 3");
 
     Timer timer;
     density::compute_local(prec, rho, Phi, DensityType::Total);
     print_utils::qmfunction(3, "Compute local density", rho, timer);
-    MSG_INFO("Debug message 4");
+    // MSG_INFO("Debug message 4");
 }
 
 } // namespace mrchem

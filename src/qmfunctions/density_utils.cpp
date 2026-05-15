@@ -143,13 +143,10 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
 
             //is this even needed? we nuke it afterwards anyway
             // mrcpp::copy_grid(rho_i, phi_i, 1); //last argument means only copy grid up to the first component, as rho_i has only one itself
-            MSG_INFO("test tutbambim");
             rho_i.alloc(1, true);
-            MSG_INFO("allocated");
 
 
             mrcpp::make_density(rho_i, phi_i, prec); // always returns real density
-            MSG_INFO("tutbambimboum");
             // if (phi_i.iscomplex()) {
             //     rho_i.CompC[0]->CopyTreeToReal(rho_i.CompD[0]);
             //     delete rho_i.CompC[0];
