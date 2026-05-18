@@ -67,29 +67,43 @@ double qmoperator::calc_kinetic_trace(MomentumOperator &p, OrbitalVector &Phi) {
     return 0.5 * eta.dot(norms);
 }
 
+/** @brief Compute the trace over the Hilbert space (not the spin space) of the kinetic matrix 
+ * 
+ */
 ComplexDouble qmoperator::calc_kinetic_trace(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &Phi, bool spinorial) {
     ComplexDouble out = {0.0, 0.0};
-    // MSG_INFO("kin trace start");
-    int alpha_index = 0; // for spinorial operators, the kinetic operator is of the form sigma p V sigma p, with sigma being a Pauli matrix. alpha_index represents which Pauli matrix is used (x,y or z). For non-spinorial operators, it is unused.
-    {   
-        if (spinorial) alpha_index = 1; // if spinorial, we use sigma_x for the kinetic operator, but it is arbitrary which Pauli matrix we use, as long as it is the same on the left and right of V.
-        OrbitalVector dPhi = p[0](Phi, alpha_index);
-        out += V.trace(dPhi);
-    }
-    {   
-        if (spinorial) alpha_index = 2;
-        OrbitalVector dPhi = p[1](Phi, alpha_index);
-        out += V.trace(dPhi);
-    }
-    {
-        if (spinorial) alpha_index = 3;
-        OrbitalVector dPhi = p[2](Phi, alpha_index);
+    if (not spinorial){ //scalar relativistic case
+        // In this case we can simply treat all directions independently, because the
+        // spin component is neglected
+        {   
+            OrbitalVector dPhi = p[0](Phi, 0);
+            out += V.trace(dPhi);
+        }
+        {   
+            OrbitalVector dPhi = p[1](Phi, 0);
+            out += V.trace(dPhi);
+        }
+        {
+            OrbitalVector dPhi = p[2](Phi, 0);
+            out += V.trace(dPhi);
+        }
+    } else { //spinorial relativistic case 
+        //in this case, the operator cannot be separated into its 3 directional components,
+        //because (σ·p)χ(σ·p) ≠ (σ_x·p_x)χ(σ_x·p_x) + (σ_y·p_y)χ(σ_y·p_y) + (σ_z·p_z)χ(σ_z·p_z)
+        //and so we need to compute the (σ·p) applied on Phi first.
+        OrbitalVector dPhi_x = p[0](Phi, 1); //(σ_x·p_x)|Phi>
+        OrbitalVector dPhi_y = p[1](Phi, 2); //(σ_y·p_y)|Phi>
+        OrbitalVector dPhi_z = p[2](Phi, 3); //(σ_z·p_z)|Phi>
+        //summing it all together
+        OrbitalVector dPhi_tmp = orbital::add({1.0,0.0}, dPhi_x, {1.0,0.0}, dPhi_y);//intermediate sum
+        OrbitalVector dPhi = orbital::add({1.0,0.0}, dPhi_tmp, {1.0,0.0}, dPhi_z);
+        //Computing the trace over the Hilbert space
         out += V.trace(dPhi);
     }
     return 0.5 * out;
 }
 
-/** @brief Expectation value matrix: T_ij = <i|T|j> = <i|p p|j>
+/** @brief Expectation value matrix (Non-relativistic): T_ij = <i|T|j> = <i|p p|j>
  *
  * @param bra: orbitals on the lhs
  * @param ket: orbitals on the rhs
@@ -130,7 +144,6 @@ ComplexMatrix qmoperator::calc_kinetic_matrix(MomentumOperator &p, RankZeroOpera
 }
 
 ComplexMatrix qmoperator::calc_kinetic_matrix_symmetrized(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket, bool spinorial) {
-    // MSG_INFO("calc kin mat symm");
     ComplexMatrix T_x = qmoperator::calc_kinetic_matrix_component_symmetrized(0, p, V, bra, ket, spinorial);
     ComplexMatrix T_y = qmoperator::calc_kinetic_matrix_component_symmetrized(1, p, V, bra, ket, spinorial);
     ComplexMatrix T_z = qmoperator::calc_kinetic_matrix_component_symmetrized(2, p, V, bra, ket, spinorial);
