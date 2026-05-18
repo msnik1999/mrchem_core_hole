@@ -176,7 +176,6 @@ bool orbital::compare(const OrbitalVector &Phi_a, const OrbitalVector &Phi_b) {
  */
 OrbitalVector orbital::add(ComplexDouble a, OrbitalVector &Phi_a, ComplexDouble b, OrbitalVector &Phi_b, double prec) {
     if (Phi_a.size() != Phi_b.size()) MSG_ERROR("Size mismatch");
-
     OrbitalVector out = orbital::param_copy(Phi_a);
     for (int i = 0; i < Phi_a.size(); i++) {
         if (mrcpp::mpi::my_func(Phi_a[i]) != mrcpp::mpi::my_func(Phi_b[i])) MSG_ABORT("MPI rank mismatch");
