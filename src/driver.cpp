@@ -381,15 +381,23 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
     //////////   Computing Ground State Properties   //////////
     ///////////////////////////////////////////////////////////
        
+    MSG_INFO("optimised");
     // get the orbital positions
     mol.calculateOrbitalPositions();
+    MSG_INFO("calculated positons");
 
     if (json_out["success"]) {
+        MSG_INFO("successed");
         if (json_scf.contains("write_orbitals_txt")) scf::write_orbitals_txt(json_scf["write_orbitals_txt"], mol);
+        if (json_scf.contains("write_orbitals_txt")) MSG_INFO("written orb txt");
         if (json_scf.contains("write_orbitals")) scf::write_orbitals(json_scf["write_orbitals"], mol);
+        if (json_scf.contains("write_orbitals")) MSG_INFO("written orb");
         if (json_scf.contains("write_density")) scf::write_density(json_scf["write_density"], mol);
+        if (json_scf.contains("write_density")) MSG_INFO("written density");
         if (json_scf.contains("properties")) scf::calc_properties(json_scf["properties"], mol, json_fock);
+        if (json_scf.contains("properties")) MSG_INFO("calc'd properties");
         if (json_scf.contains("plots")) scf::plot_quantities(json_scf["plots"], mol);
+        if (json_scf.contains("plots")) MSG_INFO("plotted");
     }
 
     return json_out;
@@ -617,12 +625,12 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     auto &nucs = mol.getNuclei();
     auto &F_mat = mol.getFockMatrix();
 
-    MSG_INFO("Pre Fock init ");
-    for (Orbital phi_i: Phi) {
-        MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-        phi_i.calcSquareNorm();
-        MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-    }
+    // MSG_INFO("Pre Fock init ");
+    // for (Orbital phi_i: Phi) {
+    //     MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
+    //     phi_i.calcSquareNorm();
+    //     MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
+    // }
 
     F_mat = ComplexMatrix::Zero(Phi.size(), Phi.size());
     if (localize && rotate) orbital::localize(prec, Phi, F_mat);
@@ -1311,6 +1319,8 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     auto Phi_p = mol.getOrbitals_p();
     auto X_p = mol.getOrbitalsX_p();
     auto Y_p = mol.getOrbitalsY_p();
+    
+    int n_components = json_scf["spinor_components"]; //required for XC spin selection, non-scalar wavefunctions require spin-adapted functions
 
     ///////////////////////////////////////////////////////////
     ///////////////      Momentum Operator    /////////////////
@@ -1529,6 +1539,7 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         auto xc_funcs = json_xcfunc["functionals"];
         auto xc_order = order + 1;
         // TODO: Look over and input parser so this is not necessary
+        // MSG_INFO("start xc");
         std::string xc_lib;
         if (json_fock.contains("xc_library")) {
             if(json_fock["xc_library"].is_array()){
@@ -1540,29 +1551,39 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
             xc_lib = "xcfun";
         }
 
+        // MSG_INFO("post lib");
         mrdft::Factory xc_factory(*MRA);
+        if (n_components > 1) xc_spin = true; //Spinors require spin differentiated behaviour
         xc_factory.setSpin(xc_spin);
         xc_factory.setLibxc((xc_lib == "libxc") ? true : false);
         xc_factory.setOrder(xc_order);
         xc_factory.setDensityCutoff(xc_cutoff);
+        // MSG_INFO("cutoff");
         for (const auto &f : xc_funcs) {
             auto name = f["name"];
             auto coef = f["coef"];
             xc_factory.setFunctional(name, coef);
         }
+        // MSG_INFO("set func");
         auto mrdft_p = xc_factory.build();
+        // MSG_INFO("built");
 
         mrdft_p->functional().print_functional_references();
 
+        // MSG_INFO("pre xc amount");
         exx = mrdft_p->functional().amountEXX();
+        // MSG_INFO("xc amount");
 
         if (order == 0) {
             auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_p, shared_memory);
+            // MSG_INFO("op set");
             if (mol.hasNLCCPseudopotential()) {
                 std::shared_ptr<Nuclei> nuclei = std::make_shared<Nuclei>(mol.getPseudoPotentialNuclei());
                 XC_p->setNuclei(nuclei);
+                // MSG_INFO("nuc set");
             }
             F.getXCOperator() = XC_p;
+            MSG_INFO("xc given to F is nullptr"<<(F.getXCOperator() == nullptr)<< " og="<< (XC_p == nullptr));
         } else if (order == 1) {
             auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_p, X_p, Y_p, shared_memory);
             F.getXCOperator() = XC_p;
@@ -1581,7 +1602,7 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         if (order == 0) {
             auto K_p = std::make_shared<ExchangeOperator>(P_p, Phi_p, exchange_prec);
             F.getExchangeOperator() = K_p;
-            MSG_INFO("Exchange size=" << K_p->trace(*Phi_p) << " " << F.getCoulombOperator()->trace(*Phi_p));// << " expct val="<< (*K_p)((*Phi_p)[0], (*Phi_p)[0]));
+            // MSG_INFO("Exchange size=" << K_p->trace(*Phi_p) << " " << F.getCoulombOperator()->trace(*Phi_p));// << " expct val="<< (*K_p)((*Phi_p)[0], (*Phi_p)[0]));
         } else {
             auto K_p = std::make_shared<ExchangeOperator>(P_p, Phi_p, X_p, Y_p, exchange_prec);
             F.getExchangeOperator() = K_p;

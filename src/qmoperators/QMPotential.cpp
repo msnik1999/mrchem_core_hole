@@ -131,20 +131,23 @@ void QMPotential::calc(mrcpp::CompFunction<3> &out, mrcpp::CompFunction<3> &inp,
     double prec = this->apply_prec;
     if (out.Ncomp() > 0) MSG_ABORT("Output not empty");
     if (out.isShared()) MSG_ABORT("Cannot share this function");
-    if (dagger and inp.iscomplex()) MSG_INFO("DAGGER OPERATOR NEEDS TO BE CHECKED");
+    // if (dagger and inp.iscomplex()) MSG_INFO("DAGGER OPERATOR NEEDS TO BE CHECKED"); //it should be good now
     if (inp.conjugate()) MSG_ERROR("Not implemented");
 
-    mrcpp::CompFunction<3> &V = *this;
+    // mrcpp::CompFunction<3> &V = *this; //original
+    // MSG_INFO("test"); //test debug
+    mrcpp::CompFunction<3> V = this->paramCopy(true); //test debug
+    mrcpp::deep_copy(V, *this); // test debug
     double coef = 1.0;
     mrcpp::copy_grid(out, inp);
-    // mrcpp::multiply(prec, out, coef, inp, V, adap);
-    // if (inp.Ncomp() == V.Ncomp()){
-    //     mrcpp::multiply(out, inp, V, prec, false, false, dagger);
-    // } else {
-    //     //single component potential 
-    //     MSG_INFO("Single component potential for some reason");
-    mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); 
-    // }
+    if (inp.Ncomp() == V.Ncomp()){ //test debug
+        MSG_INFO("inp.Ncomp=" << inp.Ncomp() << " V.comp=" << V.Ncomp()); //test debug
+        mrcpp::multiply(out, inp, V, prec, false, false, dagger); //test debug
+    } else { //test debug
+        //single component potential 
+        // if (inp.Ncomp()>1) MSG_INFO("Mismatched number of components between orbitals and potentials, treating potential as scalar function");
+        mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); //original
+    } //test debug
 }
 
 } // namespace mrchem
