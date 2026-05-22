@@ -132,9 +132,26 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
         // if (phi_i.isreal()){
         if (mrcpp::mpi::my_func(phi_i)) {
             // MSG_INFO("debug message 1.25");
-            double occ = density::compute_occupation(phi_i, spin);
-            if (std::abs(occ) < mrcpp::MachineZero) continue;
-            // MSG_INFO("debug message 1.5");
+            double occ = 1.0;
+            std::vector<bool> comp_contribution (4, true); //All components contribute to the spin (default case) 
+            // for (int i = 0; i<4; i++) comp_contribution.push_back(true); //debug test
+            if (Phi[0].Ncomp()<2){
+                occ = density::compute_occupation(phi_i, spin);
+                if (std::abs(occ) < mrcpp::MachineZero) continue;
+            } else { 
+                if (Phi[0].Ncomp()>2) MSG_WARN("not tested for 4C, might be undefined behaviour here");
+                if (spin == DensityType::Alpha) comp_contribution = {true, false, true, false}; //Alpha spin contributions only 
+                // if (spin == DensityType::Alpha){ //Alpha spin contributions only 
+                //     comp_contribution[1] = false;
+                //     comp_contribution[3] = false;
+                // }
+                if (spin == DensityType::Beta) comp_contribution = {false, true, false, true}; //Beta spin contributions only   
+                // if (spin == DensityType::Beta){ //Beta spin contributions only 
+                //     comp_contribution[0] = false;
+                //     comp_contribution[2] = false;
+                // }
+            }
+            MSG_INFO("Spin alpha="<< (spin == DensityType::Alpha) << "Spin beta="<< (spin == DensityType::Beta) <<"contribution="<< comp_contribution[0]<< comp_contribution[1]<< comp_contribution[2]<< comp_contribution[3]);
             Density rho_i; 
             // rho_i.defreal(); // test // density is always real, even if the orbital is complex
             // MSG_INFO("debug message 1.75");
@@ -147,7 +164,7 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
             rho_i.alloc(1, true);
 
 
-            mrcpp::make_density(rho_i, phi_i, prec); // always returns real density
+            mrcpp::make_density(rho_i, phi_i, prec, comp_contribution); // always returns real density
             // if (phi_i.iscomplex()) {
             //     rho_i.CompC[0]->CopyTreeToReal(rho_i.CompD[0]);
             //     delete rho_i.CompC[0];

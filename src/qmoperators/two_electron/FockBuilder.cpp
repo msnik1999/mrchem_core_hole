@@ -67,10 +67,12 @@ void FockBuilder::build(double exx) {
     this->exact_exchange = exx;
 
     this->V = RankZeroOperator();
-    if (this->nuc != nullptr) this->V += (*this->nuc); //TODO, peut-être tenter de retirer chacune de ces contributions pour voir laquelle est mal initialisée
-    if (this->coul != nullptr) this->V += (*this->coul); //coulomb pose un problème
+    if (this->nuc != nullptr) this->V += (*this->nuc);
+    if (this->coul != nullptr) this->V += (*this->coul); 
     if (this->ex != nullptr) this->V -= this->exact_exchange * (*this->ex);
+    MSG_INFO("pre xc is nullptr="<< (this->xc == nullptr));
     if (this->xc != nullptr) this->V += (*this->xc);
+    MSG_INFO("post xc");
     if (this->ext != nullptr) this->V += (*this->ext);
     if (this->Ro != nullptr) this->V -= (*this->Ro);
     if (this->pp_projector != nullptr) this->V += (*this->pp_projector);
@@ -105,7 +107,7 @@ void FockBuilder::setup(double prec) {
     this->prec = prec;
     // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators 2 "<< (this->mom != nullptr) << std::endl;
     if (this->mom != nullptr) this->momentum().setup(prec);
-    // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators 3" << std::endl;
+    MSG_INFO("is xc nullptr" << (this->xc == nullptr));
     this->potential().setup(prec);
     // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators 4" << std::endl;
     this->perturbation().setup(prec); //TODO: uncomment when response is implemented for multiple components
@@ -259,8 +261,6 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
 
     if (this->coul != nullptr) E_ee = 0.5 * this->coul->trace(Phi).real();
     if (this->ex != nullptr) E_x = -this->exact_exchange * this->ex->trace(Phi).real();
-    // ComplexDouble tutex = this->ex->trace(Phi).real();
-    // MSG_INFO("coulomb expct val="<< E_ee << " exchange expct val=" << -this->exact_exchange << " " << tutex.real() << tutex.imag());
     if (this->xc != nullptr) E_xc = this->xc->getEnergy();
     if (this->ext != nullptr) E_eext = this->ext->trace(Phi).real();
     if (getProjectorOperator() != nullptr) {
@@ -361,25 +361,8 @@ OrbitalVector FockBuilder::buildHelmholtzArgument(double prec, OrbitalVector Phi
     mrcpp::print::header(2, "Computing Helmholtz argument");
 
     Timer t_rot;
-    // MSG_INFO("Pouet")
-    // //Debug test
-    // // MSG_INFO("Fock matrix ");
-    // for (int a = 0; a < F_mat.rows(); a++) {
-    //     for (int b = 0; b < F_mat.cols(); b++) {
-    //         std::cout<< "F_mat(" << a << ", " << b << ") = " << F_mat(a, b) << "; ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // // MSG_INFO("Overlap? matrix ");
-    // for (int a = 0; a < L_mat.rows(); a++) {
-    //     for (int b = 0; b < L_mat.cols(); b++) {
-    //         std::cout<< "L_mat(" << a << ", " << b << ") = " << L_mat(a, b) << "; ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // //end debug test
+
     OrbitalVector Psi = orbital::rotate(Phi, L_mat - F_mat, prec);
-    // MSG_INFO("pouetronicus")
     mrcpp::print::time(2, "Rotating orbitals", t_rot);
 
     OrbitalVector out;
@@ -407,14 +390,15 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     RankZeroOperator &chi = *this->chi;
     RankZeroOperator &chi_m1 = *this->chi_inv;
     RankZeroOperator operOne = 0.5 * tensor::dot(p(chi), p);
-    // MSG_INFO("start");
+    MSG_INFO("start c="<< c);
 
     std::shared_ptr<RankZeroOperator> operThreePtr = nullptr;
 
     if (isZora()) {
         RankZeroOperator &V_zora = this->zora_base;
         // MSG_INFO("V_zora initialised");
-        operThreePtr = std::make_shared<RankZeroOperator>(V_zora * chi + V_zora);
+        operThreePtr = std::make_shared<RankZeroOperator>(V_zora * chi + V_zora); //original
+        // operThreePtr = std::make_shared<RankZeroOperator>(V * chi + V); //test debug numerics
         // MSG_INFO("V_zora computed");
     } else if (isAZora()) {
         /*
@@ -541,17 +525,16 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
             // mrcpp::add(termSO[i], 1.0, termSOtemp, cmplx_i, orbTempZ2, -1.0, false);  
 
             //Multiplying by the prefactors. The factor 1/2 comes from the definition of chi, whereas 1/2c^2 comes from the elimination of the small component
-            termSO[i].rescale(1 / (2*two_cc)); //could be replaced by simply changing the factor in the addition to the argument
+            // termSO[i].rescale(1 / (2*two_cc)); //could be replaced by simply changing the factor in the addition to the argument
+            termSO[i].rescale(0.5);
+            // MSG_WARN("added big FACTOR 4c^2 IN SPINORB COUPLING");
 
-            // MSG_INFO("spinorbit orb="<<i << " " << orbTempX2.getSquareNorm()<< " " << orbTempY2.getSquareNorm()<< " " << orbTempZ2.getSquareNorm());
-            // termSO[i].calcSquareNorm();
-            // MSG_INFO("SO strength="<< termSO[i].getSquareNorm() << " expectation value for orbital "<< i << ": "<< dot(Phi[i], termSO[i]));
+            termSO[i].crop(prec);
         }
         operSOX.clear();
         operSOY.clear();
         operSOZ.clear();
     }
-    // MSG_INFO("Spinorb done");
 
     //What is this useful for? We don't use them at all.
     auto normsOne = orbital::get_norms(termOne);
@@ -567,9 +550,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
         if (not mrcpp::mpi::my_func(arg[i])) continue;
         arg[i].add(1.0, termTwo[i]);
         arg[i].add(1.0, termThree[i]);
-        // MSG_INFO("pre spinorb: arg["<< i << "] is complex="<<arg[i].iscomplex() << " is real="<<arg[i].isreal());
         if ((Phi[0].Ncomp() > 1) and isZora()) arg[i].add(1.0, termSO[i]); //spin-orbit coupling. Is zero for scalar functions.
-        // MSG_INFO("post spinorb: arg["<< i << "] is complex="<<arg[i].iscomplex() << " is real="<<arg[i].isreal());
         arg[i].add(1.0, Psi[i]);
     }
     mrcpp::print::time(2, "Adding contributions", t_add);
@@ -579,6 +560,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 
     Timer t_kappa;
     mrchem::OrbitalVector out = chi_m1(arg);
+    //chi^{-1} is defined as (kappa^{-1})-1 so we need to add the argument back
     for (int i = 0; i < arg.size(); i++) {
         if (not mrcpp::mpi::my_func(out[i])) continue;
         out[i].add(1.0, arg[i]);

@@ -209,8 +209,8 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
                     int comp = 0; // component index
                     // by Aufbau, half of the atoms will be alpha (comp index 0) and half beta (comp index 1) 
                     // Warning: only 1-2 components methods are implemented
-                    if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT SETUP FOR MORE THAN 2 COMPONENTS")}
-                    if (n_components > 1) {int comp = i%2;}; 
+                    if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT ADAPTED FOR MORE THAN 2 COMPONENTS")}
+                    if (n_components > 1) {comp = i%2;}; 
                     mrcpp::project(Phi.back(), h_func, prec, comp); 
                     if (std::abs(Phi.back().norm() - 1.0) > 0.01) MSG_WARN("AO not normalized!");
                 }
@@ -232,56 +232,30 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
 void initial_guess::core::rotate_orbitals(OrbitalVector &Psi, double prec, ComplexMatrix &U, OrbitalVector &Phi) {
     if (Psi.size() == 0) return;
 
-    MSG_INFO("ROTATO ROTATO");
-
     Timer t_tot;
     mrcpp::rotate(Phi, U, Psi, prec);
     mrcpp::print::time(1, "Rotating orbitals", t_tot);
-    MSG_INFO("Rotadone");
 }
 
 ComplexMatrix initial_guess::core::diagonalize(OrbitalVector &Phi, MomentumOperator &p, RankZeroOperator &V) {
     Timer t1;
-    MSG_INFO("a");
-    ComplexMatrix S_m12 = mrcpp::calc_lowdin_matrix(Phi);//TODO checker que ça donne une matrice non nulle, sinon problème
+    ComplexMatrix S_m12 = mrcpp::calc_lowdin_matrix(Phi);
 
-    ComplexMatrix S_overlap = mrcpp::calc_overlap_matrix(Phi);
-    for (int i = 0; i < S_overlap.rows(); i++) {
-        for (int j = 0; j < S_overlap.cols(); j++) {
-            std::cout << "S_overlap(" << i << "," << j << ") = " << S_overlap(i, j) << std::endl;
-            // if (std::abs(S_m12(i, j)) > 1e-6) {
-            // }
-        }
-    }
-    MSG_INFO("b");
 
     OrbitalVector VPhi = V(Phi);
-    MSG_INFO("bbbim");
     mrcpp::print::separator(2, '-');
     ComplexMatrix t_tilde = qmoperator::calc_kinetic_matrix(p, Phi, Phi);
-    for (int m = 0; m < t_tilde.rows(); m++) {
-        std::cout << "ttilde " << std::endl;
-        for (int p = 0; p < t_tilde.cols(); p++) {
-            std::cout << t_tilde(m,p) << " ";
-        }
-        std::cout << std::endl;
-    }
-    MSG_INFO("b1");
     ComplexMatrix v_tilde = V(Phi, Phi);
-    MSG_INFO("b2");
     ComplexMatrix f_tilde = t_tilde + v_tilde;
-    MSG_INFO("b3");
     ComplexMatrix f = S_m12.adjoint() * f_tilde * S_m12;
     mrcpp::print::separator(2, '-');
     mrcpp::print::time(1, "Computing Fock matrix", t1);
 
-    MSG_INFO("c");
     Timer t2;
     DoubleVector eig;
     ComplexMatrix U = math_utils::diagonalize_hermitian_matrix(f, eig);
     mrcpp::print::time(1, "Diagonalizing Fock matrix", t2);
 
-    MSG_INFO("d");
 
     return S_m12 * U;
 }
