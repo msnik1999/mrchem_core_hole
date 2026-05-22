@@ -135,13 +135,13 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
 
         // Compute Fock matrix
         mrcpp::print::header(2, "Diagonalizing Fock matrix");
-        std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix startut" << std::endl;
-        ComplexMatrix soverlap = mrcpp::calc_overlap_matrix(Psi); //TODO check that this is not zero, sinon problème
-        for (int i = 0; i < Psi.size(); i++) {
-            for (int j = 0; j < Psi.size(); j++) {
-                std::cout << "S_overlap(" << i << "," << j << ") = " << soverlap(i, j) << std::endl;
-            }
-        }
+        // std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix startut" << std::endl;
+        // ComplexMatrix soverlap = mrcpp::calc_overlap_matrix(Psi); //TODO check that this is not zero, sinon problème
+        // for (int i = 0; i < Psi.size(); i++) {
+        //     for (int j = 0; j < Psi.size(); j++) {
+        //         std::cout << "S_overlap(" << i << "," << j << ") = " << soverlap(i, j) << std::endl;
+        //     }
+        // }
         ComplexMatrix U = initial_guess::core::diagonalize(Psi, p, V); //ça output une matrice nulle, problème
 
         // std::cout << "sad::setup Psi norm (2nd argument)=" << Psi[0].norm() << " Phi norm (1st argument)=" << Phi[0].norm() << std::endl;
@@ -159,13 +159,13 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         p.clear();
         V.clear();
 
-        std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix end" << std::endl;
-        ComplexMatrix soverlap2 = mrcpp::calc_overlap_matrix(Phi); //TODO check that this is not zero, sinon problème
-        for (int i = 0; i < Phi.size(); i++) {
-            for (int j = 0; j < Phi.size(); j++) {
-                std::cout << "soverlap2(" << i << "," << j << ") = " << soverlap2(i, j) << std::endl;
-            }
-        }
+        // std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix end" << std::endl;
+        // ComplexMatrix soverlap2 = mrcpp::calc_overlap_matrix(Phi); //TODO check that this is not zero, sinon problème
+        // for (int i = 0; i < Phi.size(); i++) {
+        //     for (int j = 0; j < Phi.size(); j++) {
+        //         std::cout << "soverlap2(" << i << "," << j << ") = " << soverlap2(i, j) << std::endl;
+        //     }
+        // }
 
         mrcpp::print::footer(2, t_tot, 2);
         if (plevel == 1) mrcpp::print::footer(1, t_tot, 2);
