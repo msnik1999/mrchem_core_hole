@@ -114,7 +114,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         t_lap.start();
         Density &rho_j = J.getDensity();
         std::cout << "initial_guess::sad::setup -- Projecting Coulomb density start" << std::endl;
-        initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);//should be okay multicomponent-wise because densities are always scalar
+        initial_guess::sad::project_atomic_densities(prec, rho_j, nucs, screen);
 
     // Compute XC density
     Density &rho_xc = XC_.getDensity(DensityType::Total);
@@ -124,7 +124,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         // Project AO basis of hydrogen functions
         t_lap.start();
         OrbitalVector Psi; 
-        initial_guess::core::project_ao(Psi, prec, nucs, zeta, n_components); //Normalement ça marche parce que ça a une norme de 1
+        initial_guess::core::project_ao(Psi, prec, nucs, zeta, n_components); 
         if (plevel == 1) mrcpp::print::time(1, "Projecting Hydrogen AOs", t_lap);
         if (plevel == 2) mrcpp::print::header(2, "Building Fock operator");
         t_lap.start();
@@ -135,14 +135,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
 
         // Compute Fock matrix
         mrcpp::print::header(2, "Diagonalizing Fock matrix");
-        // std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix startut" << std::endl;
-        // ComplexMatrix soverlap = mrcpp::calc_overlap_matrix(Psi); //TODO check that this is not zero, sinon problème
-        // for (int i = 0; i < Psi.size(); i++) {
-        //     for (int j = 0; j < Psi.size(); j++) {
-        //         std::cout << "S_overlap(" << i << "," << j << ") = " << soverlap(i, j) << std::endl;
-        //     }
-        // }
-        ComplexMatrix U = initial_guess::core::diagonalize(Psi, p, V); //ça output une matrice nulle, problème
+        ComplexMatrix U = initial_guess::core::diagonalize(Psi, p, V);
 
         // std::cout << "sad::setup Psi norm (2nd argument)=" << Psi[0].norm() << " Phi norm (1st argument)=" << Phi[0].norm() << std::endl;
 
@@ -150,10 +143,23 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         t_lap.start();
         auto Phi_a = orbital::disjoin(Phi, SPIN::Alpha); 
         auto Phi_b = orbital::disjoin(Phi, SPIN::Beta);
-        std::cout << "sad::setup post-disjoin norm (1st argument)=" << Phi[0].norm() << " norm (2nd argument)=" << Psi[0].norm() << std::endl;
-        initial_guess::core::rotate_orbitals(Phi, prec, U, Psi); //problem is here
+        initial_guess::core::rotate_orbitals(Phi, prec, U, Psi); 
         initial_guess::core::rotate_orbitals(Phi_a, prec, U, Psi);
         initial_guess::core::rotate_orbitals(Phi_b, prec, U, Psi);
+        //Alpha and Beta electrons are Kramers partners, and this
+        //needs to be reflected in the geometry of the spinors
+        //Therefore we swap the beta guess over to the second component
+        if (n_components>1) {
+            for (auto &phi : Phi_b) {
+                //swapping trees
+                std::swap(phi.CompD[0], phi.CompD[1]);
+                std::swap(phi.CompC[0], phi.CompC[1]);
+                //swapping tree metadata
+                std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
+                //swapping prefactors
+                std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+            }
+        }
         Phi = orbital::adjoin(Phi, Phi_a);
         Phi = orbital::adjoin(Phi, Phi_b);
         p.clear();
@@ -250,6 +256,20 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
     initial_guess::core::rotate_orbitals(Phi, prec, U, Psi);
     initial_guess::core::rotate_orbitals(Phi_a, prec, U, Psi);
     initial_guess::core::rotate_orbitals(Phi_b, prec, U, Psi);
+    //Alpha and Beta electrons are Kramers partners, and this
+    //needs to be reflected in the geometry of the spinors
+    //Therefore we swap the beta guess over to the second component
+    if (n_components>1) {
+        for (auto &phi : Phi_b) {
+            //swapping trees
+            std::swap(phi.CompD[0], phi.CompD[1]);
+            std::swap(phi.CompC[0], phi.CompC[1]);
+            //swapping tree metadata
+            std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
+            //swapping prefactors
+            std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+        }
+    }
     Phi = orbital::adjoin(Phi, Phi_a);
     Phi = orbital::adjoin(Phi, Phi_b);
     p.clear();
@@ -305,14 +325,11 @@ void initial_guess::sad::project_atomic_densities(double prec, Density &rho_tot,
         o_dens << sad_path << "/" << sym << ".dens";
 
         Density rho_k = initial_guess::gto::project_density(prec, nucs[k], o_bas.str(), o_dens.str(), screen);
-        std::cout << "initial_guess::sad::project_atomic_densities -- projected density for atom " << k << " norm = " << rho_k.norm() << std::endl;
         rho_k.crop(crop_prec);
         rho_loc.add(1.0, rho_k);
 
-        MSG_INFO("tut post add");
         charges[k] = nucs[k].getCharge();
         charges[N_nucs + k] = rho_k.integrate().real();
-        MSG_INFO("tut adadsa")
     }
     t_loc.stop();
     Timer t_com;
@@ -320,7 +337,6 @@ void initial_guess::sad::project_atomic_densities(double prec, Density &rho_tot,
     density::allreduce_density(rho_tot, rho_loc);
     t_com.stop();
 
-    MSG_INFO("tut 2");
     for (int k = 0; k < N_nucs; k++) {
         std::stringstream o_row;
         o_row << std::setw(w1) << k;
@@ -334,7 +350,6 @@ void initial_guess::sad::project_atomic_densities(double prec, Density &rho_tot,
     auto tot_nuc = charges.segment(0, N_nucs).sum();
     auto tot_rho = charges.segment(N_nucs, N_nucs).sum();
 
-    MSG_INFO("Tut 3");
     std::stringstream o_row;
     o_row << " Total charge";
     o_row << std::string(w1 + w2 + w4 - 13, ' ');

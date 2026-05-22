@@ -200,18 +200,23 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
             if (minAOReached and l == 0) zetaReached++;
             if (zetaReached >= zeta) break;
 
-            for (int m = 0; m < M; m++) {
+            for (int m = 0; m < M; m++) { //loop over the magnetic quantum number
                 Timer t_i;
                 HydrogenFunction h_func(n, l, m, Z, R);
                 Phi.push_back(Orbital(SPIN::Paired, n_components));
                 Phi.back().setRank(Phi.size() - 1);
                 if (mrcpp::mpi::my_func(Phi.back())) {
-                    int comp = 0; // component index
-                    // by Aufbau, half of the atoms will be alpha (comp index 0) and half beta (comp index 1) 
-                    // Warning: only 1-2 components methods are implemented
-                    if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT ADAPTED FOR MORE THAN 2 COMPONENTS")}
-                    if (n_components > 1) {comp = i%2;}; 
-                    mrcpp::project(Phi.back(), h_func, prec, comp); 
+                    // int comp = 0; // component index
+                    // // by Aufbau, half of the atoms will be alpha (comp index 0) and half beta (comp index 1) 
+                    // // Warning: only 1-2 components methods are implemented
+                    // if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT ADAPTED FOR MORE THAN 2 COMPONENTS")}
+                    // // if (n_components > 1) comp = m%2; //{comp = (Phi.size()-1)%2;};//Phi gets populated in this loop, so this should switch between 0th to 1st component and back at every iteration 
+                    // MSG_INFO("MotoComp="<< comp);
+
+                    //The AOs are all projected to the first component of Phi regardless of the number of components
+                    //It is easier to distribute them among the components in rotate() than to create a
+                    //degenerate guess (for 2C+) here that will be mixed during diagonalisation
+                    mrcpp::project(Phi.back(), h_func, prec, 0); 
                     if (std::abs(Phi.back().norm() - 1.0) > 0.01) MSG_WARN("AO not normalized!");
                 }
 
