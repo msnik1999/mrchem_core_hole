@@ -249,6 +249,7 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     // MSG_INFO("kin");
     if (isZora() || isAZora()) {
         bool spinorial = (Phi[0].Ncomp() > 1); //assumes all orbitals have the same number of components
+        MSG_INFO("Spinorial = "<< spinorial);
         //second term doesn't inclue Pauli matrices (i.e. spinorial is false) because (σ·p)(σ·p) = p^2
         E_kin = qmoperator::calc_kinetic_trace(momentum(), *this->chi, Phi, spinorial).real() + qmoperator::calc_kinetic_trace(momentum(), Phi);
     } else {
@@ -422,7 +423,8 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     // Compute OrbitalVectors
     Timer t_1;
     OrbitalVector termOne = operOne(Phi);
-    // MSG_INFO("1 applied");
+
+    //This should no longer be need as the c1 prefactors are taken as coefficients in the inplace addition routine in mrcpp
     // for (int i = 0; i < termOne.size(); i++) {
     //     //termOne will have a prefactor -1, because of i*i
     //     if (not mrcpp::mpi::my_func(termOne[i])) continue;
@@ -472,14 +474,14 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
         //NOTE! The multiplication by the Pauli matrices will need to be handled later,
         //      during the application of the cross-product to the orbitals.
         // auto dchi = p(chi); 
-        RankZeroOperator operSOX = p(chi)[1]*p[2] - p(chi)[2]*p[1];
+        RankZeroOperator operSOX = 0.5 * p(chi)[1]*p[2] - 0.5 * p(chi)[2]*p[1];
         // RankZeroOperator operSOX = dchi[1]*p[2] - dchi[2]*p[1];
         operSOX.setup(prec);
         // MSG_INFO("Spinorbit =" << " " << (p(chi)[0].getOperatorExpansion()[0])->getSquareNorm()); //<< (p(chi)[1]).getSquareNorm()<< (p(chi)[2]).getSquareNorm());
-        RankZeroOperator operSOY = p(chi)[2]*p[0] - p(chi)[0]*p[2];
+        RankZeroOperator operSOY = 0.5 * p(chi)[2]*p[0] - 0.5 * p(chi)[0]*p[2];
         // RankZeroOperator operSOY = dchi[2]*p[0] - dchi[0]*p[2];
         operSOY.setup(prec);
-        RankZeroOperator operSOZ = p(chi)[0]*p[1] - p(chi)[1]*p[0];
+        RankZeroOperator operSOZ = 0.5 * p(chi)[0]*p[1] - 0.5 * p(chi)[1]*p[0];
         // RankZeroOperator operSOZ = dchi[0]*p[1] - dchi[1]*p[0];
         operSOZ.setup(prec);
         //Applying the curls to temporary copies of the orbitals 
@@ -515,18 +517,19 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
             // MSG_INFO("spinorbit applied pauli");
             ComplexDouble cmplx_i = {0.0, 1.0};
             termSO[i].add(cmplx_i, orbTempX2);//test debug test
-            // MSG_INFO("X added");
+            // MSG_INFO("X complex="<<orbTempX2.func_ptr->data.c1[0]<<orbTempX2.func_ptr->data.c1[1]);
             termSO[i].add(cmplx_i, orbTempY2);//test debug test
-            // MSG_INFO("Y added");
+            // MSG_INFO("Y compleY="<<orbTempY2.func_ptr->data.c1[0]<<orbTempY2.func_ptr->data.c1[1]);
             termSO[i].add(cmplx_i, orbTempZ2);//test debug test
-            // MSG_INFO("Z added");
+            // MSG_INFO("Z compleZ="<<orbTempZ2.func_ptr->data.c1[0]<<orbTempZ2.func_ptr->data.c1[1]);
+            MSG_INFO("termSO["<<i<<"] norm="<< termSO[i].getSquareNorm());
             // Orbital termSOtemp;                                                                                                                                                                                                        
             // mrcpp::add(termSOtemp, cmplx_i, orbTempX2, cmplx_i, orbTempY2, -1.0, false);                                                                                                                                               
             // mrcpp::add(termSO[i], 1.0, termSOtemp, cmplx_i, orbTempZ2, -1.0, false);  
 
             //Multiplying by the prefactors. The factor 1/2 comes from the definition of chi, whereas 1/2c^2 comes from the elimination of the small component
             // termSO[i].rescale(1 / (2*two_cc)); //could be replaced by simply changing the factor in the addition to the argument
-            termSO[i].rescale(0.5);
+            // termSO[i].rescale(0.5);
             // MSG_WARN("added big FACTOR 4c^2 IN SPINORB COUPLING");
 
             termSO[i].crop(prec);
