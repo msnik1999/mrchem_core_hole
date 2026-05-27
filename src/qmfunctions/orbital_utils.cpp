@@ -178,6 +178,8 @@ OrbitalVector orbital::add(ComplexDouble a, OrbitalVector &Phi_a, ComplexDouble 
     if (Phi_a.size() != Phi_b.size()) MSG_ERROR("Size mismatch");
     OrbitalVector out = orbital::param_copy(Phi_a);
     for (int i = 0; i < Phi_a.size(); i++) {
+        //resetting out's c1 prefactors that were inherited from Phi_a from the param_copy
+        for (int comp=0; comp<4; comp++) out[i].func_ptr->data.c1[comp] = {1.0,0.0};
         if (mrcpp::mpi::my_func(Phi_a[i]) != mrcpp::mpi::my_func(Phi_b[i])) MSG_ABORT("MPI rank mismatch");
         mrcpp::add(out[i], a, Phi_a[i], b, Phi_b[i], prec);
     }
