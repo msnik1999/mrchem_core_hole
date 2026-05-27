@@ -141,12 +141,13 @@ void QMPotential::calc(mrcpp::CompFunction<3> &out, mrcpp::CompFunction<3> &inp,
     double coef = 1.0;
     mrcpp::copy_grid(out, inp);
     if (inp.Ncomp() == V.Ncomp()){ //test debug
-        MSG_INFO("inp.Ncomp=" << inp.Ncomp() << " V.comp=" << V.Ncomp()); //test debug
+        // MSG_INFO("inp.Ncomp=" << inp.Ncomp() << " V.comp=" << V.Ncomp()); //test debug
         mrcpp::multiply(out, inp, V, prec, false, false, dagger); //test debug
     } else { //test debug
         //single component potential 
-        // if (inp.Ncomp()>1) MSG_INFO("Mismatched number of components between orbitals and potentials, treating potential as scalar function");
         mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); //original
+        //since we treat V as a functionTree we need to apply its prefactor c1 manually.
+        for (int comp = 0; comp < out.Ncomp(); comp++) out.func_ptr->data.c1[comp] *= V.func_ptr->data.c1[0];
     } //test debug
 }
 
