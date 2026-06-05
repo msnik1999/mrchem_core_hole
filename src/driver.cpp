@@ -115,7 +115,7 @@ namespace driver {
 DerivativeOperator_p get_derivative(const std::string &name);
 template <int I> RankOneOperator<I> get_operator(const std::string &name, const json &json_oper);
 template <int I, int J> RankTwoOperator<I, J> get_operator(const std::string &name, const json &json_oper);
-void build_fock_operator(const json &input, Molecule &mol, FockBuilder &F, int order, bool is_dynamic = false);
+void build_fock_operator(const json &input, Molecule &mol, FockBuilder &F, int order, bool is_dynamic = false, int n_components = 1);
 void init_properties(const json &json_prop, Molecule &mol);
 
 namespace scf {
@@ -285,21 +285,21 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
     } else {xc_lib = "xcfun";}
 
     ///////////////////////////////////////////////////////////
+    ////////////////   WAVEFUNCTION COMPONENTS  ///////////////
+    ///////////////////////////////////////////////////////////
+    int n_components = json_scf["spinor_components"];
+    std::cout << "driver::scf::run n_components: " << n_components << std::endl;
+
+    ///////////////////////////////////////////////////////////
     ////////////////   Building Fock Operator   ///////////////
     ///////////////////////////////////////////////////////////
     std::cout << "driver::scf::run Fock start" << std::endl;
     FockBuilder F;
     const auto &json_fock = json_scf["fock_operator"];
-    driver::build_fock_operator(json_fock, mol, F, 0); 
+    driver::build_fock_operator(json_fock, mol, F, 0, n_components); 
 
     // Pre-compute internal exchange contributions
     if (F.getExchangeOperator()) F.getExchangeOperator()->setPreCompute();
-
-    ///////////////////////////////////////////////////////////
-    // WAVEFUNCTION COMPONENTS
-    ///////////////////////////////////////////////////////////
-    int n_components = json_scf["spinor_components"];
-    std::cout << "driver::scf::run n_components: " << n_components << std::endl;
 
     ///////////////////////////////////////////////////////////
     ///////////////   Setting Up Initial Guess   //////////////
@@ -585,7 +585,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     }
     for (const auto &phi_i : Phi) {
         double err = (mrcpp::mpi::my_func(phi_i)) ? std::abs(phi_i.norm() - 1.0) : 0.0;
-        std::cout << "driver::scf::guess_orbitals -- orbital norm : " << phi_i.norm() << std::endl;
         if (err > 0.01) MSG_WARN("MO not normalized!");
     }
 
@@ -638,7 +637,7 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     MSG_INFO("Pre Fock setup");
 
     F.setup(prec);
-    MSG_INFO("build fock done DaddyCoul=" << F.getCoulombOperator()->trace(Phi)<< " DaddyExch=" << F.getExchangeOperator()->trace(Phi));
+    // MSG_INFO("build fock done DaddyCoul=" << F.getCoulombOperator()->trace(Phi));//<< " DaddyExch=" << F.getExchangeOperator()->trace(Phi));
     std::cout << "driver::scf::guess_energy -- Fock operator setup done nucsize="<< F.getNuclearOperator()->size() << std::endl;
     F_mat = F(Phi, Phi);
     std::cout << "driver::scf::guess_energy -- Fock matrix computed nuc =" << F.getNuclearOperator()->size() << std::endl;
@@ -1311,7 +1310,7 @@ void driver::rsp::calc_properties(const json &json_prop, Molecule &mol, int dir,
  * construct all operator which are present in this input. Option to set
  * perturbation order of the operators.
  */
-void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuilder &F, int order, bool is_dynamic) {
+void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuilder &F, int order, bool is_dynamic, int n_components) {
 
     auto &nuclei = mol.getNuclei();
     auto pp_nuclei = mol.getPseudoPotentialNuclei();
@@ -1320,8 +1319,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     auto X_p = mol.getOrbitalsX_p();
     auto Y_p = mol.getOrbitalsY_p();
     
-    int n_components = json_scf["spinor_components"]; //required for XC spin selection, non-scalar wavefunctions require spin-adapted functions
-
     ///////////////////////////////////////////////////////////
     ///////////////      Momentum Operator    /////////////////
     ///////////////////////////////////////////////////////////
@@ -1539,7 +1536,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         auto xc_funcs = json_xcfunc["functionals"];
         auto xc_order = order + 1;
         // TODO: Look over and input parser so this is not necessary
-        // MSG_INFO("start xc");
         std::string xc_lib;
         if (json_fock.contains("xc_library")) {
             if(json_fock["xc_library"].is_array()){
@@ -1554,6 +1550,7 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         // MSG_INFO("post lib");
         mrdft::Factory xc_factory(*MRA);
         if (n_components > 1) xc_spin = true; //Spinors require spin differentiated behaviour
+        MSG_INFO("xc_spin="<< xc_spin);
         xc_factory.setSpin(xc_spin);
         xc_factory.setLibxc((xc_lib == "libxc") ? true : false);
         xc_factory.setOrder(xc_order);
