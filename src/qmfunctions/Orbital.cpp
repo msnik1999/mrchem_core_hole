@@ -102,31 +102,31 @@ Orbital Orbital::dagger() const {
     return out; // Return shallow copy
 }
 
-/** @brief Write orbital to disk
- *
- * @param file: file name prefix
- *
- * Given a file name prefix (e.g. "phi_0"), this will produce separate
- * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
- * and imaginary ("phi_0_im.tree") parts.
- */
-void Orbital::saveOrbital(const std::string &file) {
-    if (isreal()) CompD[0]->saveTree(file);
-    if (iscomplex()) CompC[0]->saveTree(file);
-}
+// /** @brief Write orbital to disk //DEPRECATED; implemented in orbital_utils
+//  *
+//  * @param file: file name prefix
+//  *
+//  * Given a file name prefix (e.g. "phi_0"), this will produce separate
+//  * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
+//  * and imaginary ("phi_0_im.tree") parts.
+//  */
+// void Orbital::saveOrbital(const std::string &file) {
+//     if (isreal()) CompD[0]->saveTree(file);
+//     if (iscomplex()) CompC[0]->saveTree(file);
+// }
 
-/** @brief Read orbital from disk
- *
- * @param file: file name prefix
- *
- * Given a file name prefix (e.g. "phi_0"), this will read separate
- * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
- * and imaginary ("phi_0_im.tree") parts.
- */
-void Orbital::loadOrbital(const std::string &file) {
-    if (isreal()) CompD[0]->loadTree(file);
-    if (iscomplex()) CompC[0]->loadTree(file);
-}
+// /** @brief Read orbital from disk //DEPRECATED; implemented in orbital_utils
+//  *
+//  * @param file: file name prefix
+//  *
+//  * Given a file name prefix (e.g. "phi_0"), this will read separate
+//  * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
+//  * and imaginary ("phi_0_im.tree") parts.
+//  */
+// void Orbital::loadOrbital(const std::string &file) {
+//     if (isreal()) CompD[0]->loadTree(file);
+//     if (iscomplex()) CompC[0]->loadTree(file);
+// }
 
 /** @brief Returns a character representing the spin (a/b/p) */
 char Orbital::printSpin() const {

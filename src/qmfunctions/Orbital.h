@@ -72,8 +72,8 @@ public:
 
     char printSpin() const;
     void setSpin(int spin) { this->func_ptr->data.n1[0] = spin; }
-    void saveOrbital(const std::string &file);
-    void loadOrbital(const std::string &file);
+    // void saveOrbital(const std::string &file); //DEPRECATED -- implemented in orbital_utils
+    // void loadOrbital(const std::string &file); //DEPRECATED -- implemented in orbital_utils
 };
 
 // All MPI processes have a vector of full length, but

@@ -575,24 +575,8 @@ ComplexMatrix orbital::diagonalize(double prec, OrbitalVector &Phi, ComplexMatri
     auto plevel = Printer::getPrintLevel();
     mrcpp::print::header(2, "Digonalizing Fock matrix");
 
-    // MSG_INFO("pre calc overlap");
-
     ComplexMatrix S_m12 = orbital::calc_lowdin_matrix(Phi);
     F = S_m12.adjoint() * F * S_m12;
-
-    // MSG_INFO("post calc overlap");
-    // for (Orbital phi_i: Phi) {
-    //     MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-    //     phi_i.calcSquareNorm();
-    //     MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-    // }
-    // MSG_INFO("Lowdin");
-    // for (int i=0; i < S_m12.rows(); i++){
-    //     for (int j=0; j < S_m12.cols(); j++){
-    //         std::cout << S_m12(i,j) << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
 
     Timer diag_t;
     ComplexMatrix U = ComplexMatrix::Zero(F.rows(), F.cols());
@@ -605,29 +589,9 @@ ComplexMatrix orbital::diagonalize(double prec, OrbitalVector &Phi, ComplexMatri
     U = S_m12 * U;
     mrcpp::print::time(2, "Diagonalizing matrix", diag_t);
 
-    // MSG_INFO("pre rotate");
-    // for (Orbital phi_i: Phi) {
-    //     MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-    //     phi_i.calcSquareNorm();
-    //     MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-    // }
-    // MSG_INFO("Rotation matrix:");
-    // for (int i=0; i < U.rows(); i++){
-    //     for (int j=0; j < U.cols(); j++){
-    //         std::cout << U(i,j) << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-
     Timer rot_t;
     mrcpp::rotate(Phi, U, prec);
     mrcpp::print::time(2, "Rotating orbitals", rot_t);
-    // MSG_INFO("rotok");
-    // for (Orbital phi_i: Phi) {
-    //     MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-    //     phi_i.calcSquareNorm();
-    //     MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-    // }
 
     mrcpp::print::footer(2, t_tot, 2);
     if (plevel == 1) mrcpp::print::time(1, "Diagonalizing Fock matrix", t_tot);
@@ -1054,24 +1018,28 @@ void orbital::saveOrbital(const std::string &file, const Orbital &orb, int text_
         f.close();
     }
 
-    // writing real tree
-    if (orb.isreal()) {
-        std::stringstream fname;
-        fname << file << "_real";
-        if (text_format)
-            orb.CompD[0]->saveTreeTXT(fname.str());
-        else
-            orb.CompD[0]->saveTree(fname.str());
-    }
-
-    // writing complex tree
-    if (orb.iscomplex()) {
-        std::stringstream fname;
-        fname << file << "_complex";
-        if (text_format)
-            orb.CompC[0]->saveTreeTXT(fname.str());
-        else
-            orb.CompC[0]->saveTree(fname.str());
+    for (int comp=0; comp<orb.Ncomp(); comp++){
+        // writing real tree
+        if (orb.isreal()) {
+            std::stringstream fname;
+            fname << file << "_real";
+            if (comp > 0) fname << "_" << comp; // first component retains the standard file name. Other components gain a "_i" suffix
+            if (text_format)
+                orb.CompD[comp]->saveTreeTXT(fname.str());
+            else
+                orb.CompD[comp]->saveTree(fname.str());
+        }
+    
+        // writing complex tree
+        if (orb.iscomplex()) {
+            std::stringstream fname;
+            fname << file << "_complex";
+            if (comp > 0) fname << "_" << comp; // first component retains the standard file name. Other components gain a "_i" suffix
+            if (text_format)
+                orb.CompC[comp]->saveTreeTXT(fname.str());
+            else
+                orb.CompC[comp]->saveTree(fname.str());
+        }
     }
 }
 
@@ -1136,20 +1104,26 @@ void orbital::loadOrbital(const std::string &file, Orbital &orb) {
         MSG_ABORT("Invalid basis type!");
     }
 
-    // reading real orbital
-    if (orb.isreal()) {
-        std::stringstream fname;
-        fname << file << "_real";
-        orb.alloc(1);
-        orb.CompD[0]->loadTree(fname.str());
-    }
+    // allocate all components according to the meta data, then read each one
+    int nComp = std::max(orb.Ncomp(), 1);
+    orb.alloc(nComp);
 
-    // reading complex orbital
-    if (orb.iscomplex()) {
-        std::stringstream fname;
-        fname << file << "_complex";
-        orb.alloc(1);
-        orb.CompC[0]->loadTree(fname.str());
+    for (int i = 0; i < nComp; i++) {
+        // reading real orbital
+        if (orb.isreal()) {
+            std::stringstream fname;
+            fname << file << "_real";
+            if (i > 0) fname << "_" << i;
+            orb.CompD[i]->loadTree(fname.str());
+        }
+
+        // reading complex orbital
+        if (orb.iscomplex()) {
+            std::stringstream fname;
+            fname << file << "_complex";
+            if (i > 0) fname << "_" << i;
+            orb.CompC[i]->loadTree(fname.str());
+        }
     }
     delete mra;
 }
