@@ -501,26 +501,29 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
             // termSO[i].defcomplex(); //test debug test
             // termSO[i].alloc(Phi[i].Ncomp(), true);
 
-            Orbital orbTempX2;//test debug test
-            Orbital orbTempY2;//test debug test
-            Orbital orbTempZ2;//test debug test
-            deep_copy(orbTempX2, orbTempX[i]);//test debug test
-            deep_copy(orbTempY2, orbTempY[i]);//test debug test
-            deep_copy(orbTempZ2, orbTempZ[i]);//test debug test
+            // Orbital orbTempX2;//test debug test
+            // Orbital orbTempY2;//test debug test
+            // Orbital orbTempZ2;//test debug test
+            // deep_copy(orbTempX2, orbTempX[i]);//test debug test
+            // deep_copy(orbTempY2, orbTempY[i]);//test debug test
+            // deep_copy(orbTempZ2, orbTempZ[i]);//test debug test
+            // mrcpp::apply_Pauli(orbTempX2, orbTempX[i], 1, -1.0, false);//test debug test
+            // mrcpp::apply_Pauli(orbTempY2, orbTempY[i], 2, -1.0, false);//test debug test
+            // mrcpp::apply_Pauli(orbTempZ2, orbTempZ[i], 3, -1.0, false);//test debug test
             // mrcpp::apply_Pauli(orbTempX[i], orbTempX[i], 1, -1.0, false);//it runs but I believe it is not computing correctly if input and output is the same
             // mrcpp::apply_Pauli(orbTempY[i], orbTempY[i], 1, -1.0, false); //runs
             // mrcpp::apply_Pauli(orbTempZ[i], orbTempZ[i], 1, -1.0, false); //runs
             // MSG_INFO("spinorbit before pauli"<< orbTempX[i].getSquareNorm()<< " "<< orbTempY[i].getSquareNorm()<< " "<< orbTempZ[i].getSquareNorm()<< " ");
-            mrcpp::apply_Pauli(orbTempX2, orbTempX[i], 1, -1.0, false);//test debug test
-            mrcpp::apply_Pauli(orbTempY2, orbTempY[i], 2, -1.0, false);//test debug test
-            mrcpp::apply_Pauli(orbTempZ2, orbTempZ[i], 3, -1.0, false);//test debug test
             // MSG_INFO("spinorbit applied pauli");
+            mrcpp::apply_gamma(orbTempX[i], 1);//test debug test
+            mrcpp::apply_gamma(orbTempY[i], 2);//test debug test
+            mrcpp::apply_gamma(orbTempZ[i], 3);//test debug test
             ComplexDouble cmplx_i = {0.0, 1.0};
-            termSO[i].add(cmplx_i, orbTempX2);//test debug test
+            termSO[i].add(cmplx_i, orbTempX[i]);//test debug test
             // MSG_INFO("X complex="<<orbTempX2.func_ptr->data.c1[0]<<orbTempX2.func_ptr->data.c1[1]);
-            termSO[i].add(cmplx_i, orbTempY2);//test debug test
+            termSO[i].add(cmplx_i, orbTempY[i]);//test debug test
             // MSG_INFO("Y compleY="<<orbTempY2.func_ptr->data.c1[0]<<orbTempY2.func_ptr->data.c1[1]);
-            termSO[i].add(cmplx_i, orbTempZ2);//test debug test
+            termSO[i].add(cmplx_i, orbTempZ[i]);//test debug test
             // MSG_INFO("Z compleZ="<<orbTempZ2.func_ptr->data.c1[0]<<orbTempZ2.func_ptr->data.c1[1]);
             MSG_INFO("termSO["<<i<<"] norm="<< termSO[i].getSquareNorm());
             // Orbital termSOtemp;                                                                                                                                                                                                        
