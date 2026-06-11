@@ -224,6 +224,9 @@ void RankZeroOperator::clear() {
     }
 }
 
+/** @brief sample operator value at coordinate r in space
+ * 
+ */
 ComplexDouble RankZeroOperator::operator()(const mrcpp::Coord<3> &r) const {
     const RankZeroOperator &O = *this;
     ComplexDouble out = {0.0, 0.0};
@@ -246,7 +249,7 @@ ComplexDouble RankZeroOperator::dagger(const mrcpp::Coord<3> &r) const {
 /** @brief Implements an operator of the form (σO) (i.e. sigma matrix times O, not dot) acting on an orbital, with O the RankZeroOperator
  *
  * @param inp: orbital on which to apply
- * @param alpha: index of the Dirac matrices. 0 is default and represents the identity
+ * @param alpha: index of the Pauli/Dirac (gamma) matrices. 0 is default and represents the identity
  *
  * Applies each term of the operator expansion to the input orbital. First all
  * components of each term are applied consecutively, then the output of each term
@@ -259,32 +262,19 @@ ComplexDouble RankZeroOperator::dagger(const mrcpp::Coord<3> &r) const {
  * NOT YET IMPLEMENTED- SEE spinor_utils.cpp IN MRCPP IF YOU WANT TO IMPLEMENT 4 COMPONENT STUFF For 4 component (Dirac) spinors, alpha = 0,1,2,3 corresponds to indentiy, alpha_x, y and z respectively, and alpha = 4 corresponds to the beta matrix
  */
 Orbital RankZeroOperator::operator()(Orbital inp, int alpha) {
-    // MSG_INFO("aa");
     if (inp.getNNodes() == 0) return inp.paramCopy(false);
-    // apply operator to input orbital
     RankZeroOperator &O = *this;
-    // MSG_INFO("bb");
     std::vector<mrcpp::CompFunction<3>> func_vec;
-    // MSG_INFO("cc");
     std::vector<ComplexDouble> coef_vec = getCoefVector();
-    // MSG_INFO("dd" << " name=" << O.name() << " size="<< O.size());
     for (int n = 0; n < O.size(); n++) {
-        // MSG_INFO(O.size() << " ee " << n << " name = " << O.name());
         Orbital out_n = O.applyOperTerm(n, inp);
         func_vec.push_back(out_n);
     }
-    // MSG_INFO("ff");
     Orbital out = inp.paramCopy(true);
-    // MSG_INFO("gg" << out.Ncomp());
     mrcpp::linear_combination(out, coef_vec, func_vec, -1.0);
-    // MSG_INFO("hh");
-    // apply the alpha (Pauli) matrix to the result; NB: 4C behaviour needs to be implemented
-    Orbital out_true; //debug test
-    mrcpp::deep_copy(out_true, out); //debug test
-    mrcpp::apply_Pauli(out_true, out, alpha); 
-    // MSG_INFO("ii end");
-    // return out;
-    return out_true; //debug test
+    // apply the gamma (Pauli) matrix to the result
+    if (inp.Ncomp()>1) mrcpp::apply_gamma(out, alpha);
+    return out;
 }
 
 /** @brief apply the adjoint of the operator expansion to orbital
@@ -322,22 +312,10 @@ OrbitalVector RankZeroOperator::operator()(OrbitalVector &inp, int alpha) {
     for (auto i = 0; i < inp.size(); i++) {
         Timer t1;
         Orbital out_i;
-        // out_i.defreal(); //debug test doesn't help
-        // out_i.alloc(inp[0].Ncomp()); //debug test doesn't help
         if (mrcpp::mpi::my_func(inp[i])) {
-            // MSG_INFO("MPI");
             out_i = O(inp[i], alpha);
-            // Orbital out_tmp; //debug test
-            // out_tmp.defreal(); //debug test doesn't help
-            // out_tmp.alloc(inp[i].Ncomp()); //debug test doesn't help
-            // out_tmp = O(inp[i]); //debug test
-            // out_i = O(inp[i]);
-            // mrcpp::apply_Pauli(out_i, out_tmp, alpha); //problème dans ça?
-            // out_i = mrcpp::apply_alpha(out_tmp, alpha); //debug test
         } else {
-            // MSG_INFO("not MPi");
             out_i = inp[i].paramCopy(false);
-            // mrcpp::apply_Pauli(out_i, inp[i], alpha); //Remove? if the orbital is not on the current MPI rank, we prolly shouldn't do anything to it
         }
         out.push_back(out_i);
         std::stringstream o_name;

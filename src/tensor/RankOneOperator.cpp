@@ -40,26 +40,25 @@ template <int I> RankOneOperator<I> RankOneOperator<I>::operator()(RankZeroOpera
     return out;
 }
 
-/* @brief apply vector operator to an orbital, of the form σO, with  σ being a Pauli or Dirac matrix (acting in spinor space)
+/** @brief apply vector operator to an orbital, of the form σO, with  σ being a Pauli or Dirac matrix (acting in spinor space)
  *
  * @param phi: orbital to which to apply the operator
- * @param alpha: index of the Pauli/Dirac matrix (Identity=0, Pauli x,y,z/gamma matrices = 1,2,3, beta/gamma5 =4) 
+ * @param alpha: index of the Pauli/Dirac (gamma) matrix (Identity=0, Pauli x,y,z/gamma matrices = 1,2,3, beta/gamma5 =4) 
  *
  * Returns a vector of orbitals, each component being the result of applying
  * the corresponding RankZeroOperator to the input orbital.
  */
-//TODO: needs to be adapted for 4C operators with gamma matrices
+//TODO: needs to be adapted for 4C operators with gamma matrices (modified in RankZeroOperator and mrcpp::spinor_utils)
 template <int I> std::vector<Orbital> RankOneOperator<I>::operator()(Orbital phi, int alpha) { 
     RankOneOperator<I> &O = *this; 
     std::vector<Orbital> out;
     for (int i = 0; i < I; i++) {
-        out.push_back(O[i](phi)); //application of the operator is inherited from rankzerooperator
-        mrcpp::apply_Pauli(out[i], out[i], alpha, -1.0, out[i].iscomplex() == 1 );
+        out.push_back(O[i](phi, alpha)); //application of the operator is inherited from RankZeroOperator
     }
     return out;
 }
 
-/* @brief computes the expectation values of an operator of the form σO, <bra|σO|ket> (NOT <bra|O^dagger σ σO|ket>), with  σ being a Pauli or Dirac matrix (acting in spinor space)
+/** @brief computes the expectation values of an operator of the form σO, <bra|σO|ket> (NOT <bra|O^dagger σ σO|ket>), with  σ being a Pauli or Dirac matrix (acting in spinor space)
  *
  * @param bra: dual/conjugated orbital 
  * @param ket: orbital
