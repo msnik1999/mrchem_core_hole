@@ -40,20 +40,22 @@ template <int I> RankOneOperator<I> RankOneOperator<I>::operator()(RankZeroOpera
     return out;
 }
 
-/** @brief apply vector operator to an orbital, of the form σO, with  σ being a Pauli or Dirac matrix (acting in spinor space)
+/** @brief apply vector operator to an orbital, of the form σ_i O_i, with  σ being a Pauli or Dirac matrix (acting in spinor space), and i=x,y,z here
  *
  * @param phi: orbital to which to apply the operator
- * @param alpha: index of the Pauli/Dirac (gamma) matrix (Identity=0, Pauli x,y,z/gamma matrices = 1,2,3, beta/gamma5 =4) 
+ * @param spinorial: boolean to enable multiplication by Pauli/Gamma matrices0
  *
  * Returns a vector of orbitals, each component being the result of applying
  * the corresponding RankZeroOperator to the input orbital.
  */
 //TODO: needs to be adapted for 4C operators with gamma matrices (modified in RankZeroOperator and mrcpp::spinor_utils)
-template <int I> std::vector<Orbital> RankOneOperator<I>::operator()(Orbital phi, int alpha) { 
+template <int I> std::vector<Orbital> RankOneOperator<I>::operator()(Orbital phi, bool spinorial) { 
     RankOneOperator<I> &O = *this; 
     std::vector<Orbital> out;
+    int gamma_index = 0; // indices of the gamma/Pauli matrices to be applied, default 0 if 
     for (int i = 0; i < I; i++) {
-        out.push_back(O[i](phi, alpha)); //application of the operator is inherited from RankZeroOperator
+        if (spinorial) gamma_index = i;
+        out.push_back(O[i](phi, gamma_index)); //application of the operator is inherited from RankZeroOperator
     }
     return out;
 }
