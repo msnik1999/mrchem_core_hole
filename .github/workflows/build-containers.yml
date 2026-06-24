@@ -3,9 +3,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
   release:
     types:
       - published
@@ -13,8 +10,8 @@ on:
 jobs:
   build-test-containers:
     runs-on: ubuntu-latest
-    # env:
-    #   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     strategy:
       # Keep going on other deployments if anything bloops
       fail-fast: false
@@ -34,7 +31,7 @@ jobs:
     name: Build ${{ matrix.program }}-${{ matrix.variant }}
     steps:
       - name: Check out code for the container builds
-        uses: actions/checkout@v7
+        uses: actions/checkout@v2
 
       - name: Build container
         env:
