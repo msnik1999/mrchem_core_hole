@@ -27,6 +27,7 @@ import itertools
 import math
 import re
 from copy import deepcopy
+from pathlib import Path
 
 from .periodictable import PeriodicTable, PeriodicTableByZ
 
@@ -118,7 +119,15 @@ class MoleculeValidator:
         self.charge = self.user_mol["charge"]
         self.mult = self.user_mol["multiplicity"]
         self.do_translate = self.user_mol["translate"]
-        self.coords_raw = self.user_mol["coords"]
+
+        coords = self.user_mol["coords"]
+        xyz_file = self.user_mol["xyz_file"]
+        if coords and xyz_file:
+            raise RuntimeError("ABORT: Cannot specify both 'coords' and 'xyz_file' in Molecule section")
+        if xyz_file:
+            self.coords_raw = self._read_xyz_file(xyz_file)
+        else:
+            self.coords_raw = coords
 
         # Validate atomic coordinates
         (
@@ -190,6 +199,20 @@ class MoleculeValidator:
                 self.cavity_sigmas,
             )
         ]
+
+    def _read_xyz_file(self, xyz_file):
+        """Read an XYZ file and return its atom lines as a string in coords format."""
+        path = Path(xyz_file)
+        if not path.exists():
+            raise RuntimeError(f"ABORT: XYZ file not found: {xyz_file}")
+        lines = path.read_text().splitlines()
+        if len(lines) < 2:
+            raise RuntimeError(f"ABORT: XYZ file too short (missing header): {xyz_file}")
+        # skip atom-count line and comment line; return remaining non-empty lines
+        atom_lines = [l for l in lines[2:] if l.strip()]
+        if not atom_lines:
+            raise RuntimeError(f"ABORT: XYZ file contains no atom coordinates: {xyz_file}")
+        return "\n".join(atom_lines)
 
     def validate_atomic_coordinates(self):
         """Parse the $coords block and ensure correct formatting."""

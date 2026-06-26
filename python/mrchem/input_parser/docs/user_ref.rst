@@ -318,9 +318,17 @@ User input reference
   
     **Default** ``False``
   
-   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number 
+   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number. Mutually exclusive with ``xyz_file``. 
   
     **Type** ``str``
+  
+    **Default** ````
+  
+   :xyz_file: Path to an XYZ file containing atomic coordinates. The file must follow the standard XYZ format (first line: atom count, second line: comment, remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``. Coordinates are interpreted in the unit set by ``world_unit``. 
+  
+    **Type** ``str``
+  
+    **Default** ````
   
  :WaveFunction: Define the wavefunction method. 
 

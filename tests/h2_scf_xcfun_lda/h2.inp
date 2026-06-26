@@ -9,10 +9,7 @@ MPI {
 }
 
 Molecule {
-$coords
-H      0.0000 0.0000   -0.3705
-H      0.0000 0.0000    0.3705
-$end
+  xyz_file = h2.xyz
 }
 
 WaveFunction {

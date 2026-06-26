@@ -273,9 +273,18 @@ sections:
           the global gauge origin.
       - name: coords
         type: str
+        default: ''
         docstring: |
           Coordinates in xyz format. Atoms can be given either using atom symbol or
-          atom number
+          atom number. Mutually exclusive with ``xyz_file``.
+      - name: xyz_file
+        type: str
+        default: ''
+        docstring: |
+          Path to an XYZ file containing atomic coordinates. The file must follow
+          the standard XYZ format (first line: atom count, second line: comment,
+          remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``.
+          Coordinates are interpreted in the unit set by ``world_unit``.
   - name: WaveFunction
     docstring: |
       Define the wavefunction method.

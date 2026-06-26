@@ -67,6 +67,11 @@ def main():
     else:
         user_dict = parse(infile=inp_file)
 
+    # resolve xyz_file path relative to the input file's directory
+    xyz_file = user_dict["Molecule"]["xyz_file"]
+    if xyz_file and not Path(xyz_file).is_absolute():
+        user_dict["Molecule"]["xyz_file"] = str((inp_file.parent / xyz_file).resolve())
+
     # create necessary directories
     for d in [
         user_dict["SCF"]["path_checkpoint"],

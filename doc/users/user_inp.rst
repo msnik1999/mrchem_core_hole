@@ -186,12 +186,17 @@ specified, otherwise defaults are shown):
       charge = 0                            # Total charge of molecule
       multiplicity = 1                      # Spin multiplicity
       translate = false                     # Translate CoM to world_origin
+      xyz_file = water.xyz                  # XYZ file (alternative to $coords)
     $coords
     O   0.0000     0.0000     0.0000        # Atomic symbol and coordinate
     H   0.0000     1.4375     1.1500        # Atomic symbol and coordinate
     H   0.0000    -1.4375     1.1500        # Atomic symbol and coordinate
     $end
     }
+
+The geometry can be provided either inline via ``$coords`` or from an external
+XYZ file via ``xyz_file``; the two are mutually exclusive. The same
+``world_unit`` applies in both cases.
 
 Since the computational domain is always cubic and symmetric around the origin
 it is usually a good idea to ``translate`` the molecule to the origin (as long
