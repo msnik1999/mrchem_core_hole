@@ -554,7 +554,7 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     } else if (type == "mw") {
         success = initial_guess::mw::setup(Phi, prec, mw_p, mw_a, mw_b);
     } else if (type == "core") {
-        success = initial_guess::core::setup(Phi, prec, nucs, zeta);
+        success = initial_guess::core::setup(Phi, prec, nucs, zeta, n_components);
     } else if (type == "sad") {
         std::cout << "driver::scf::guess_orbitals -- SAD setup start" << std::endl;
         success = initial_guess::sad::setup(Phi, prec, screen, nucs, zeta, n_components);
@@ -578,7 +578,7 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
         if (json_guess.contains(key)) nao_directory = json_guess[key];
 
 
-        success = initial_guess::nao::setup(Phi, prec, nucs, nmix, alpha_mix, nao_directory);
+        success = initial_guess::nao::setup(Phi, prec, nucs, nmix, alpha_mix, nao_directory, n_components);
     } else {
         MSG_ERROR("Invalid initial guess");
         success = false;

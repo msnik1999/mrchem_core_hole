@@ -130,7 +130,6 @@ ComplexMatrix qmoperator::calc_kinetic_matrix(MomentumOperator &p, OrbitalVector
  */
 ComplexMatrix qmoperator::calc_kinetic_matrix(MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket, bool spinorial) {
     if (spinorial and (bra[0].Ncomp() < 2 or ket[0].Ncomp() < 2)) MSG_WARN("Spin-orbit interaction enabled with scalar functions, will probably create issues");
-    MSG_INFO("Spinorial = "<< spinorial);
     if (not spinorial){
         //scalar case
         ComplexMatrix T_x = qmoperator::calc_kinetic_matrix_component(0, p, V, bra, ket); 
@@ -212,7 +211,7 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component_symmetrized(int d, Momen
     return 0.5 * T;
 }
 
-/* @brief Scalar relativistic computation of the kinetic matrix
+/** @brief Scalar relativistic computation of the kinetic matrix
 * @param d: integer for selecting the direction, x,y,z
 */
 ComplexMatrix qmoperator::calc_kinetic_matrix_component(int d, MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket) {
@@ -245,7 +244,7 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component(int d, MomentumOperator 
     return 0.5 * T;
 }
 
-/* @brief Spinorial computation of the kinetic matrix 
+/** @brief Spinorial computation of the kinetic matrix 
 * The directions can no longer be computed seperately, due to the kinetic operator becoming σ·p
 */
 ComplexMatrix qmoperator::calc_kinetic_matrix_component( MomentumOperator &p, RankZeroOperator &V, OrbitalVector &bra, OrbitalVector &ket) {
@@ -265,28 +264,6 @@ ComplexMatrix qmoperator::calc_kinetic_matrix_component( MomentumOperator &p, Ra
         //summing it all together
         OrbitalVector dKet_tmp = orbital::add({1.0,0.0}, dKet_x, {1.0,0.0}, dKet_y);//intermediate sum
         OrbitalVector dKet = orbital::add({1.0,0.0}, dKet_tmp, {1.0,0.0}, dKet_z);
-        // ComplexVector ones = ComplexVector::Ones(Ni, 1); //Vector of 1.0 for in-place addition later
-        // OrbitalVector dKet = p[1](ket, 1); //(σ_x·p_x)|ket>, also holding the sum of all three directions
-        // // mrcpp::add(dKet, ones, p[2](ket, 2)); //(σ_y·p_y)|ket>
-        // // mrcpp::add(dKet, ones, p[3](ket, 3)); //(σ_z·p_z)|ket>
-        // OrbitalVector dKet_y = p[2](ket, 2); //(σ_y·p_y)|ket>
-        // mrcpp::add(dKet, ones, dKet_y); 
-        // OrbitalVector dKet_z = p[3](ket, 3); //(σ_z·p_z)|ket>
-        // mrcpp::add(dKet, ones, dKet_z);
-        
-        // ComplexMatrix testKet = mrcpp::calc_overlap_matrix(dKet);
-        // // MSG_INFO("bk same dket test " << testKet(0,0) << " "<< testKet(0,1) << " " << d);
-        // // MSG_INFO("bk same dket test " << testKet(1,0) << " "<< testKet(1,1) << " " << d);
-        // OrbitalVector dKettest = p[d](ket, 0); //debug test
-        // ComplexMatrix testKet2 = mrcpp::calc_overlap_matrix(dKet); //debug test
-        // // MSG_INFO("bk same dket test 2" << testKet2(0,0) << " "<< testKet2(0,1) << " " << d);
-        // // MSG_INFO("bk same dket test 2" << testKet2(1,0) << " "<< testKet2(1,1) << " " << d);
-        // //further debug stuff
-        // ComplexMatrix Ttest = ComplexMatrix::Zero(Ni,Nj);
-        // Ttest = V(dKettest, dKettest);
-        // // MSG_INFO("bk same V applied test "  << Ttest(0,0) << " "<< Ttest(0,1) << " " << d);
-        // // MSG_INFO("bk same V applied test "  << Ttest(1,0) << " "<< Ttest(1,1));
-        // //end further debug sutff
 
         // MSG_INFO("bk same dket done ");
         nNodes += orbital::get_n_nodes(dKet);
