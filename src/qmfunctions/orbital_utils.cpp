@@ -1098,6 +1098,7 @@ void orbital::loadOrbital(const std::string &file, Orbital &orb) {
         mrcpp::InterpolatingBasis basis(orb.data().order);
         mra = new mrcpp::MultiResolutionAnalysis<3>(world, basis, orb.data().depth);
     } else if (orb.data().type == mrcpp::Legendre) {
+        //BUG: this will always trigger by default, as mrcpp::Legendre = 0 and it is the default value in CompFunctionData
         mrcpp::LegendreBasis basis(orb.data().order);
         mra = new mrcpp::MultiResolutionAnalysis<3>(world, basis, orb.data().depth);
     } else {

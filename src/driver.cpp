@@ -322,7 +322,6 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
         scf::guess_energy(json_guess, mol, F);
         json_out["initial_energy"] = mol.getSCFEnergy().json();
     } else {
-        std::cout << "driver::scf::run Initial Guess start failed" << std::endl;
         json_out["success"] = false;
         return json_out;
     }
@@ -430,12 +429,8 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     auto cube_p = json_guess["file_CUBE_p"];
     auto cube_a = json_guess["file_CUBE_a"];
     auto cube_b = json_guess["file_CUBE_b"];
-    std::cout << "driver::scf::guess_orbitals -- json done until n_components restricted=" << restricted << std::endl;
-    // int n_components = json_guess["spinor_components"];
-    std::cout << "driver::scf::guess_orbitals -- json done" << n_components << " " << std::endl;
 
     int mult = mol.getMultiplicity();
-    std::cout << "driver::scf::guess_orbitals -- multiplicity: " << mult << std::endl;
     if (restricted && mult != 1) {
         MSG_ERROR("Restricted open-shell not supported");
         return false;
@@ -443,7 +438,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
 
     // Figure out number of electrons
     int Ne = mol.getNElectrons(); // total electrons
-    std::cout << "driver::scf::guess_orbitals -- number of electrons: " << Ne << std::endl;
     int Ns = mult - 1;            // single occ electrons
     int Nd = Ne - Ns;             // double occ electrons
     if (Nd % 2 != 0) {
@@ -465,11 +459,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     for (auto a = 0; a < Na; a++) Phi.push_back(Orbital(SPIN::Alpha, n_components));
     for (auto b = 0; b < Nb; b++) Phi.push_back(Orbital(SPIN::Beta, n_components));
     
-    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto") || (type == "mw"))) {
-        MSG_ERROR("Initial guess for multi-component orbitals only implemented for SAD");
-        return false;
-    }
-
     ///////////////////////////////////////////////////////////
     ///////////////          Core Hole        /////////////////
     ///////////////////////////////////////////////////////////
@@ -549,10 +538,16 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
         type = "nao";
     }
 
+    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto") || (type == "mw") || (type == "nao"))) {
+        MSG_ERROR("Initial guess type "<< type << " not implemented for spinors");
+        return false;
+    }
+
     if (type == "chk") {
         success = initial_guess::chk::setup(Phi, file_chk);
     } else if (type == "mw") {
-        success = initial_guess::mw::setup(Phi, prec, mw_p, mw_a, mw_b);
+        MSG_INFO("mw");
+        success = initial_guess::mw::setup(Phi, prec, mw_p, mw_a, mw_b, n_components);
     } else if (type == "core") {
         success = initial_guess::core::setup(Phi, prec, nucs, zeta, n_components);
     } else if (type == "sad") {
