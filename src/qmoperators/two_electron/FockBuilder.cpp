@@ -353,17 +353,14 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     RankZeroOperator &V = potential();
     RankZeroOperator &chi = *this->chi;
     RankZeroOperator &chi_m1 = *this->chi_inv;
-    RankZeroOperator operOne = 0.5 * tensor::dot(p(chi), p);
+    RankZeroOperator operOne = 0.5 * tensor::dot(p(chi), p); 
     MSG_INFO("start c="<< c);
 
     std::shared_ptr<RankZeroOperator> operThreePtr = nullptr;
 
     if (isZora()) {
         RankZeroOperator &V_zora = this->zora_base;
-        // MSG_INFO("V_zora initialised");
         operThreePtr = std::make_shared<RankZeroOperator>(V_zora * chi + V_zora); //original
-        // operThreePtr = std::make_shared<RankZeroOperator>(V * chi + V); //test debug numerics
-        // MSG_INFO("V_zora computed");
     } else if (isAZora()) {
         /*
         Note that V_z * kappa = 2 c^2 * (kappa - 1)
@@ -387,21 +384,10 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     Timer t_1;
     OrbitalVector termOne = operOne(Phi);
 
-    //This should no longer be need as the c1 prefactors are taken as coefficients in the inplace addition routine in mrcpp
-    // for (int i = 0; i < termOne.size(); i++) {
-    //     //termOne will have a prefactor -1, because of i*i
-    //     if (not mrcpp::mpi::my_func(termOne[i])) continue;
-    //     ComplexDouble fac = termOne[i].func_ptr->data.c1[0];
-    //     if(std::norm(fac-1.0)>mrcpp::MachineZero)termOne[i].rescale(fac);
-    //     termOne[i].func_ptr->data.c1[0] = {1.0, 0.0};
-    // }
-
-
     mrcpp::print::time(2, "Computing gradient term", t_1);
 
     Timer t_2;
     OrbitalVector termTwo = V(Phi);
-    // MSG_INFO("2 applied");
 
     mrcpp::print::time(2, "Computing potential term", t_2);
 
@@ -413,90 +399,36 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
         epsPhi[i].rescale(eps[i] / two_cc);
     }
     OrbitalVector termThree = operThree(epsPhi);
-    // MSG_INFO("3 applied");
     mrcpp::print::time(2, "Computing rescaled potential term", t_3);
 
     //spin orbit coupling term, which would be identically 0 for scalar functions.
     OrbitalVector termSO(Phi.size());
-    // OrbitalVector termSO = orbital::deep_copy(Phi); //test debug test start
-    //set the orbitals to zero in case we don't use them 
-    // for (int i = 0; i < termSO.size(); i++) {
-    //     //def termSO real or complex depending on phi ? 
-    //     // termSO[i].alloc(Phi[i].Ncomp(), true);
-    //     for (int comp = 0; comp < termSO[i].Ncomp(); comp++){
-    //         if (termSO[i].isreal()){termSO[i].CompD[comp]->setZero();}
-    //         if (termSO[i].iscomplex()){termSO[i].CompC[comp]->setZero();}
-    //     }
-    // }
-    //test debug test end
     if ((Phi[0].Ncomp() == 2) and isZora()) {
-        // mrcpp::apply(prec, *dx_chi, p[0], chi);
-        
-        // MSG_INFO("spinorial");
+
         //Manually implementing the cross product appearing in the spin-orbit term
         //NOTE! The multiplication by the Pauli matrices will need to be handled later,
         //      during the application of the cross-product to the orbitals.
-        // auto dchi = p(chi); 
         RankZeroOperator operSOX = 0.5 * p(chi)[1]*p[2] - 0.5 * p(chi)[2]*p[1];
-        // RankZeroOperator operSOX = dchi[1]*p[2] - dchi[2]*p[1];
         operSOX.setup(prec);
-        // MSG_INFO("Spinorbit =" << " " << (p(chi)[0].getOperatorExpansion()[0])->getSquareNorm()); //<< (p(chi)[1]).getSquareNorm()<< (p(chi)[2]).getSquareNorm());
         RankZeroOperator operSOY = 0.5 * p(chi)[2]*p[0] - 0.5 * p(chi)[0]*p[2];
-        // RankZeroOperator operSOY = dchi[2]*p[0] - dchi[0]*p[2];
         operSOY.setup(prec);
         RankZeroOperator operSOZ = 0.5 * p(chi)[0]*p[1] - 0.5 * p(chi)[1]*p[0];
-        // RankZeroOperator operSOZ = dchi[0]*p[1] - dchi[1]*p[0];
         operSOZ.setup(prec);
         //Applying the curls to temporary copies of the orbitals 
         //NOTE! Extremely inefficient!
-        // OrbitalVector orbTempX = orbital::deep_copy(Phi);
         OrbitalVector orbTempX = operSOX(Phi);
-        // orbTempX = operSOX(Phi);
-        // OrbitalVector orbTempY = orbital::deep_copy(Phi);
         OrbitalVector orbTempY = operSOY(Phi);
-        // orbTempY = operSOY(Phi);
-        // OrbitalVector orbTempZ = orbital::deep_copy(Phi);
         OrbitalVector orbTempZ = operSOZ(Phi);
-        // orbTempZ = operSOZ(Phi);
-        // MSG_INFO("Curls applied");
         //adding the contributions together. Note that the coefficient is purely imaginary.
         for (int i = 0; i < Phi.size(); i++) {
-            // termSO[i].defcomplex(); //test debug test
-            // termSO[i].alloc(Phi[i].Ncomp(), true);
+            mrcpp::apply_gamma(orbTempX[i], 1);
+            mrcpp::apply_gamma(orbTempY[i], 2);
+            mrcpp::apply_gamma(orbTempZ[i], 3);
 
-            // Orbital orbTempX2;//test debug test
-            // Orbital orbTempY2;//test debug test
-            // Orbital orbTempZ2;//test debug test
-            // deep_copy(orbTempX2, orbTempX[i]);//test debug test
-            // deep_copy(orbTempY2, orbTempY[i]);//test debug test
-            // deep_copy(orbTempZ2, orbTempZ[i]);//test debug test
-            // mrcpp::apply_Pauli(orbTempX2, orbTempX[i], 1, -1.0, false);//test debug test
-            // mrcpp::apply_Pauli(orbTempY2, orbTempY[i], 2, -1.0, false);//test debug test
-            // mrcpp::apply_Pauli(orbTempZ2, orbTempZ[i], 3, -1.0, false);//test debug test
-            // mrcpp::apply_Pauli(orbTempX[i], orbTempX[i], 1, -1.0, false);//it runs but I believe it is not computing correctly if input and output is the same
-            // mrcpp::apply_Pauli(orbTempY[i], orbTempY[i], 1, -1.0, false); //runs
-            // mrcpp::apply_Pauli(orbTempZ[i], orbTempZ[i], 1, -1.0, false); //runs
-            // MSG_INFO("spinorbit before pauli"<< orbTempX[i].getSquareNorm()<< " "<< orbTempY[i].getSquareNorm()<< " "<< orbTempZ[i].getSquareNorm()<< " ");
-            // MSG_INFO("spinorbit applied pauli");
-            mrcpp::apply_gamma(orbTempX[i], 1);//test debug test
-            mrcpp::apply_gamma(orbTempY[i], 2);//test debug test
-            mrcpp::apply_gamma(orbTempZ[i], 3);//test debug test
-            ComplexDouble cmplx_i = {0.0, 1.0};
-            termSO[i].add(cmplx_i, orbTempX[i]);//test debug test
-            // MSG_INFO("X complex="<<orbTempX2.func_ptr->data.c1[0]<<orbTempX2.func_ptr->data.c1[1]);
-            termSO[i].add(cmplx_i, orbTempY[i]);//test debug test
-            // MSG_INFO("Y compleY="<<orbTempY2.func_ptr->data.c1[0]<<orbTempY2.func_ptr->data.c1[1]);
-            termSO[i].add(cmplx_i, orbTempZ[i]);//test debug test
-            // MSG_INFO("Z compleZ="<<orbTempZ2.func_ptr->data.c1[0]<<orbTempZ2.func_ptr->data.c1[1]);
-            MSG_INFO("termSO["<<i<<"] norm="<< termSO[i].getSquareNorm());
-            // Orbital termSOtemp;                                                                                                                                                                                                        
-            // mrcpp::add(termSOtemp, cmplx_i, orbTempX2, cmplx_i, orbTempY2, -1.0, false);                                                                                                                                               
-            // mrcpp::add(termSO[i], 1.0, termSOtemp, cmplx_i, orbTempZ2, -1.0, false);  
-
-            //Multiplying by the prefactors. The factor 1/2 comes from the definition of chi, whereas 1/2c^2 comes from the elimination of the small component
-            // termSO[i].rescale(1 / (2*two_cc)); //could be replaced by simply changing the factor in the addition to the argument
-            // termSO[i].rescale(0.5);
-            // MSG_WARN("added big FACTOR 4c^2 IN SPINORB COUPLING");
+            ComplexDouble cmplx_i = {0.0, 1.0}; 
+            termSO[i].add(cmplx_i, orbTempX[i]);
+            termSO[i].add(cmplx_i, orbTempY[i]);
+            termSO[i].add(cmplx_i, orbTempZ[i]);
 
             termSO[i].crop(prec);
         }
@@ -509,7 +441,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
     auto normsOne = orbital::get_norms(termOne);
     auto normsTwo = orbital::get_norms(termTwo);
     auto normsThree = orbital::get_norms(termThree);
-    // auto normsSO = (Phi[0].Ncomp() > 1 ? orbital::get_norms(termSO) : DoubleVector(termSO.size(), 0.0)); //Does not compile. Need to check the constructor for the DoubleVector
+    // auto normsSO = (Phi[0].Ncomp() > 1 ? orbital::get_norms(termSO) : DoubleVector(termSO.size(), 0.0)); //Don't know why we compute them norms, we don't use them later
     auto normsPsi = orbital::get_norms(Psi);
 
     // Add up all the terms
@@ -596,14 +528,9 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
         // apply (σ_d p_d) to χ(σ·p)|ψ> (no summation yet)
         std::vector<Orbital> nabla_chi_nabla_Phi = p(termTwo_tmp, rotate_spin);
         // sum it up in the final term
-        termTwo[i].add({0.5, 0.0}, nabla_chi_nabla_Phi[0]);
-        termTwo[i].add({0.5, 0.0}, nabla_chi_nabla_Phi[1]);
-        termTwo[i].add({0.5, 0.0}, nabla_chi_nabla_Phi[2]);
-
-        // termTwo[i].add({1.0, 0.0}, p[0](termTwo_tmp, 1));
-        // termTwo[i].add({1.0, 0.0}, p[1](termTwo_tmp, 2));
-        // termTwo[i].add({1.0, 0.0}, p[2](termTwo_tmp, 3));
-
+        termTwo[i].add({1.0, 0.0}, nabla_chi_nabla_Phi[0]);
+        termTwo[i].add({1.0, 0.0}, nabla_chi_nabla_Phi[1]);
+        termTwo[i].add({1.0, 0.0}, nabla_chi_nabla_Phi[2]);
     }
 
     mrcpp::print::time(2, "Computing potential term", t_pot);
@@ -613,7 +540,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     OrbitalVector out = orbital::deep_copy(termOne);
     for (int i = 0; i < out.size(); i++) {
         if (not mrcpp::mpi::my_func(out[i])) continue;
-        out[i].add(1.0, termTwo[i]);
+        out[i].add(0.5, termTwo[i]);
         out[i].add(1.0, Psi[i]);
     };
     mrcpp::print::time(2, "Adding contributions", t_add);
@@ -630,32 +557,26 @@ void FockBuilder::setZoraType(bool has_nuc, bool has_coul, bool has_xc, bool is_
 std::shared_ptr<QMPotential> FockBuilder::collectZoraBasePotential() {
     Timer timer;
     auto vz = std::make_shared<QMPotential>(1, false); // normal way
-    // auto vz = std::make_shared<QMPotential>(1, false, 2); //TODO: Inclure la quantité de composantes des orbitales dans ce constructeur //Probablement un problème dans le constructeur ici dans le cas où on a 2 composantes? 
     vz->alloc(1, true);
     if (zora_has_nuc) {
-        // MSG_INFO("Collecting nuclear potential for ZORA base potential");
         if (getNuclearOperator() != nullptr) {
-            // MSG_INFO("Collecting nuclear potential for ZORA base potential tut ");
             auto &vnuc = static_cast<QMPotential &>(getNuclearOperator()->getRaw(0, 0));
             if (not vnuc.hasReal()) MSG_ERROR("ZORA: Adding empty nuclear potential");
-            // MSG_INFO("Adding nuclear potential to ZORA base potential");
             vz->add(1.0, vnuc);
         } else {
             MSG_ERROR("ZORA: Nuclear requested but not available");
         }
     }
     if (zora_has_coul) {
-        // MSG_INFO("Collecting Coulomb potential for ZORA base potential");
         if (getCoulombOperator() != nullptr) {
             auto &coul = static_cast<QMPotential &>(getCoulombOperator()->getRaw(0, 0));
-            // if (not coul.hasReal()) MSG_INFO("ZORA: Adding empty Coulomb potential");
+            if (not coul.hasReal()) MSG_INFO("ZORA: Adding empty Coulomb potential");
             vz->add(1.0, coul);
         } else {
             MSG_ERROR("ZORA: Coulomb requested but not available");
         }
     }
     if (zora_has_xc) {
-        // MSG_INFO("Collecting XC potential for ZORA base potential");
         if (getXCOperator() != nullptr) {
             getXCOperator()->setSpin(SPIN::Paired);
             auto &xc = static_cast<QMPotential &>(getXCOperator()->getRaw(0, 0));
