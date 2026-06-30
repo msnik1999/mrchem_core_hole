@@ -64,6 +64,7 @@ ComplexMatrix calc_overlap_matrix(OrbitalVector &Bra, OrbitalVector &Ket);
 ComplexMatrix localize(double prec, OrbitalVector &Phi, ComplexMatrix &F);
 ComplexMatrix diagonalize(double prec, OrbitalVector &Phi, ComplexMatrix &F);
 ComplexMatrix orthonormalize(double prec, OrbitalVector &Phi, ComplexMatrix &F);
+ComplexMatrix kramers_orthonormalize(double prec, OrbitalVector &Phi, ComplexMatrix &F);
 
 int size_empty(const OrbitalVector &Phi);
 int size_occupied(const OrbitalVector &Phi);

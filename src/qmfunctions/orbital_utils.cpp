@@ -30,6 +30,7 @@
 #include <MRCPP/trees/FunctionNode.h>
 #include <MRCPP/utils/details.h>
 #include <MRCPP/utils/CompFunction.h>
+#include <MRCPP/utils/spinor_utils.h>
 
 #include "utils/RRMaximizer.h"
 #include "utils/math_utils.h"
@@ -622,6 +623,49 @@ ComplexMatrix orbital::orthonormalize(double prec, OrbitalVector &Phi, ComplexMa
     if (plevel == 1) mrcpp::print::time(1, "Lowdin orthonormalization", t_tot);
 
     return U;
+}
+
+/** @brief Perform the Löwdin orthonormalization on a set of orbitals verifying the time-reversal symmetry (Kramers theorem)
+ *
+ * @param Phi: orbitals to orthonormalize
+ * @param F: Fock matrix in the Phi basis
+ *
+ * Orthonormalizes the orbitals by multiplication of the Löwdin matrix S^(-1/2).
+ * Orbitals are rotated in place, and the transformation matrix is returned.
+ */
+ComplexMatrix orbital::kramers_orthonormalize(double prec, OrbitalVector &Phi, ComplexMatrix &F) {
+    Timer t_tot, t_lap;
+    auto plevel = Printer::getPrintLevel();
+    mrcpp::print::header(2, "Lowdin orthonormalization");
+
+    // number of represented electrons
+    int N = Phi.size();
+
+    // Compute complete 2N x 2N overlap matrix 
+    ComplexMatrix S = mrcpp::calc_kramers_overlap_matrix(Phi, Phi); 
+
+    // Compute S^-1/2 
+    ComplexMatrix S_m12 = math_utils::hermitian_matrix_pow(S, -1.0 / 2.0);
+
+    // Isolate the upper left N x X block 
+    ComplexMatrix S_restricted (N,N);
+    for (int i=0; i < N; i++){
+        for (int j=0; j < N; j++){
+            S_restricted(i,j) = S_m12(i,j);
+        }
+    }
+
+    // orthonormalise the orbitals
+    t_lap.start();
+    mrcpp::rotate(Phi, S_restricted, prec);
+    mrcpp::print::time(2, "Rotating orbitals", t_lap);
+
+    // Transform Fock matrix
+    F = S_restricted.adjoint() * F * S_restricted;
+    mrcpp::print::footer(2, t_tot, 2);
+    if (plevel == 1) mrcpp::print::time(1, "Lowdin orthonormalization", t_tot);
+
+    return S_restricted;
 }
 
 /** @brief Returns the number of occupied orbitals */
