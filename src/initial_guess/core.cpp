@@ -132,6 +132,7 @@ bool initial_guess::core::setup(OrbitalVector &Phi, double prec, const Nuclei &n
     //Alpha and Beta electrons are Kramers partners, and this
     //needs to be reflected in the geometry of the spinors
     //Therefore we swap the beta guess over to the second component
+    //to emulate the time-reversal operator -iσ_y K0
     if (n_components>1) {
         for (auto &phi : Phi_b) {
             //swapping trees
@@ -139,8 +140,9 @@ bool initial_guess::core::setup(OrbitalVector &Phi, double prec, const Nuclei &n
             std::swap(phi.CompC[0], phi.CompC[1]);
             //swapping tree metadata
             std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
-            //swapping prefactors
+            //multiplying prefactors with -i σ_y
             std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+            phi.func_ptr->data.c1[1] *= -1.0;
         }
     }
     Phi = orbital::adjoin(Phi, Phi_a);

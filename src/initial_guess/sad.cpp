@@ -149,6 +149,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         //Alpha and Beta electrons are Kramers partners, and this
         //needs to be reflected in the geometry of the spinors
         //Therefore we swap the beta guess over to the second component
+        //to emulate the time-reversal operator -iσ_y K0
         if (n_components>1) {
             for (auto &phi : Phi_b) {
                 //swapping trees
@@ -156,22 +157,15 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
                 std::swap(phi.CompC[0], phi.CompC[1]);
                 //swapping tree metadata
                 std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
-                //swapping prefactors
+                //multiplying the prefactor with -i σ_y
                 std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+                phi.func_ptr->data.c1[1] *= -1.0;
             }
         }
         Phi = orbital::adjoin(Phi, Phi_a);
         Phi = orbital::adjoin(Phi, Phi_b);
         p.clear();
         V.clear();
-
-        // std::cout << "initial_guess::sad::setup -- Diagonalizing Fock matrix end" << std::endl;
-        // ComplexMatrix soverlap2 = mrcpp::calc_overlap_matrix(Phi); //TODO check that this is not zero, sinon problème
-        // for (int i = 0; i < Phi.size(); i++) {
-        //     for (int j = 0; j < Phi.size(); j++) {
-        //         std::cout << "soverlap2(" << i << "," << j << ") = " << soverlap2(i, j) << std::endl;
-        //     }
-        // }
 
         mrcpp::print::footer(2, t_tot, 2);
         if (plevel == 1) mrcpp::print::footer(1, t_tot, 2);
@@ -266,8 +260,9 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
             std::swap(phi.CompC[0], phi.CompC[1]);
             //swapping tree metadata
             std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
-            //swapping prefactors
+            //multiplying the prefactors with -i sigma_y
             std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+            phi.func_ptr->data.c1[1] *= -1.0;
         }
     }
     Phi = orbital::adjoin(Phi, Phi_a);

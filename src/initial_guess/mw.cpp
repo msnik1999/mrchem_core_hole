@@ -76,6 +76,7 @@ bool initial_guess::mw::setup(OrbitalVector &Phi, double prec, const std::string
     // content from comp[0] to comp[1] to match Kramers symmetry
     // If the loaded files for beta orbitals are scalar (1 component)
     // swap them over to the second component to follow symmetry
+    // and emulate the time-reversal operator -iσ_y K0
     if (n_components > 1 && file_ncomp_b == 1) {
         for (auto &phi : Phi_b) {
             //swap components
@@ -83,8 +84,9 @@ bool initial_guess::mw::setup(OrbitalVector &Phi, double prec, const std::string
             std::swap(phi.CompC[0], phi.CompC[1]);
             //swap metadata
             std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
-            //swap prefactors
+            //multiplying prefactors with -i σ_y
             std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
+            phi.func_ptr->data.c1[1] *= -1.0;
         }
     }
 
