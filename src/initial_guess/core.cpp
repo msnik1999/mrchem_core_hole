@@ -142,7 +142,7 @@ bool initial_guess::core::setup(OrbitalVector &Phi, double prec, const Nuclei &n
             std::swap(phi.func_ptr->data.Nchunks[0], phi.func_ptr->data.Nchunks[1]);
             //multiplying prefactors with -i σ_y
             std::swap(phi.func_ptr->data.c1[0], phi.func_ptr->data.c1[1]);
-            phi.func_ptr->data.c1[1] *= -1.0;
+            phi.func_ptr->data.c1[0] *= -1.0;
         }
     }
     Phi = orbital::adjoin(Phi, Phi_a);
