@@ -44,7 +44,7 @@ else:
     else:
         raise RuntimeError("MRChem Python frontend module not found!")
 
-from mrchem import cli, parse, translate_input, validate
+from mrchem import cli, lex, parse, translate_input, validate
 
 
 def main():
@@ -65,7 +65,12 @@ def main():
     if args.inp_json:
         user_dict = validate(ir_in=inp_file)
     else:
-        user_dict = parse(infile=inp_file)
+        ir = lex(infile=inp_file)
+        # XYZ files are conventionally written in angstrom; if xyz_file is
+        # given and world_unit was not set explicitly, default to angstrom
+        if ir.get("Molecule", {}).get("xyz_file") and "world_unit" not in ir:
+            ir["world_unit"] = "angstrom"
+        user_dict = validate(ir_in=ir)
 
     # resolve xyz_file path relative to the input file's directory
     xyz_file = user_dict["Molecule"]["xyz_file"]

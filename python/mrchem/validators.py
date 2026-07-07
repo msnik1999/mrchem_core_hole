@@ -124,6 +124,8 @@ class MoleculeValidator:
         xyz_file = self.user_mol["xyz_file"]
         if coords and xyz_file:
             raise RuntimeError("ABORT: Cannot specify both 'coords' and 'xyz_file' in Molecule section")
+        if not coords and not xyz_file:
+            raise RuntimeError("ABORT: Molecule geometry must be provided via 'coords' or 'xyz_file'")
         if xyz_file:
             self.coords_raw = self._read_xyz_file(xyz_file)
         else:

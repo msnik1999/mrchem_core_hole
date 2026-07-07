@@ -195,8 +195,14 @@ specified, otherwise defaults are shown):
     }
 
 The geometry can be provided either inline via ``$coords`` or from an external
-XYZ file via ``xyz_file``; the two are mutually exclusive. The same
-``world_unit`` applies in both cases.
+XYZ file via ``xyz_file``; the two are mutually exclusive.
+
+.. note::
+
+    When using ``xyz_file``, the default for ``world_unit`` changes from
+    ``bohr`` to ``angstrom``, since XYZ files are conventionally written in
+    angstrom. You can still override this explicitly with ``world_unit = bohr``
+    in the top section.
 
 Since the computational domain is always cubic and symmetric around the origin
 it is usually a good idea to ``translate`` the molecule to the origin (as long
