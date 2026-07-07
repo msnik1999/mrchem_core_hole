@@ -54,7 +54,7 @@ template <int I> std::vector<Orbital> RankOneOperator<I>::operator()(Orbital phi
     std::vector<Orbital> out;
     int gamma_index = 0; // indices of the gamma/Pauli matrices to be applied, default 0 if 
     for (int i = 0; i < I; i++) {
-        if (spinorial) gamma_index = i;
+        if (spinorial) gamma_index = i+1;
         out.push_back(O[i](phi, gamma_index)); //application of the operator is inherited from RankZeroOperator
     }
     return out;
