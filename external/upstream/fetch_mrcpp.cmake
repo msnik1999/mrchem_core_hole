@@ -39,7 +39,7 @@ else()
     GIT_REPOSITORY
     https://github.com/Dheasra/mrcpp.git
     GIT_TAG
-    f06ebe58666240f1ed7074d3a0380efa2899751c
+    4e752abff45a98f9853414a3e76881947ce4db91
   )
 
   FetchContent_GetProperties(mrcpp_sources)

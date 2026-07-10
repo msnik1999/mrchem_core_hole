@@ -135,6 +135,7 @@ bool initial_guess::core::setup(OrbitalVector &Phi, double prec, const Nuclei &n
     //to emulate the time-reversal operator -iσ_y K0
     if (n_components>1) {
         for (auto &phi : Phi_b) {
+            if (mrcpp::mpi::my_func(phi)) continue;
             //swapping trees
             std::swap(phi.CompD[0], phi.CompD[1]);
             std::swap(phi.CompC[0], phi.CompC[1]);
@@ -227,7 +228,6 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
                     // // Warning: only 1-2 components methods are implemented
                     // if (n_components > 2) {MSG_WARN("WARNING THIS METHOD IS NOT ADAPTED FOR MORE THAN 2 COMPONENTS")}
                     // // if (n_components > 1) comp = m%2; //{comp = (Phi.size()-1)%2;};//Phi gets populated in this loop, so this should switch between 0th to 1st component and back at every iteration 
-                    // MSG_INFO("MotoComp="<< comp);
 
                     //The AOs are all projected to the first component of Phi regardless of the number of components
                     //It is easier to distribute them among the components in rotate() than to create a

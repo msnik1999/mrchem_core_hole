@@ -574,7 +574,7 @@ ComplexMatrix orbital::calc_localization_matrix(double prec, OrbitalVector &Phi)
 ComplexMatrix orbital::diagonalize(double prec, OrbitalVector &Phi, ComplexMatrix &F) {
     Timer t_tot;
     auto plevel = Printer::getPrintLevel();
-    mrcpp::print::header(2, "Digonalizing Fock matrix");
+    mrcpp::print::header(2, "Diagonalizing Fock matrix");
 
     ComplexMatrix S_m12 = orbital::calc_lowdin_matrix(Phi);
     F = S_m12.adjoint() * F * S_m12;

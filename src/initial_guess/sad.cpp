@@ -152,6 +152,7 @@ bool initial_guess::sad::setup(OrbitalVector &Phi, double prec, double screen, c
         //to emulate the time-reversal operator -iσ_y K0
         if (n_components>1) {
             for (auto &phi : Phi_b) {
+                if (mrcpp::mpi::my_func(phi)) continue;
                 //swapping trees
                 std::swap(phi.CompD[0], phi.CompD[1]);
                 std::swap(phi.CompC[0], phi.CompC[1]);
@@ -255,6 +256,7 @@ bool initial_guess::sad::setupGTO(OrbitalVector &Phi, double prec, double screen
     //Therefore we swap the beta guess over to the second component
     if (n_components>1) {
         for (auto &phi : Phi_b) {
+            if (mrcpp::mpi::my_func(phi)) continue;
             //swapping trees
             std::swap(phi.CompD[0], phi.CompD[1]);
             std::swap(phi.CompC[0], phi.CompC[1]);

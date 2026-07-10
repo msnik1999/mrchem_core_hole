@@ -79,6 +79,7 @@ bool initial_guess::mw::setup(OrbitalVector &Phi, double prec, const std::string
     // and emulate the time-reversal operator -iσ_y K0
     if (n_components > 1 && file_ncomp_b == 1) {
         for (auto &phi : Phi_b) {
+            if (mrcpp::mpi::my_func(phi)) continue;
             //swap components
             std::swap(phi.CompD[0], phi.CompD[1]);
             std::swap(phi.CompC[0], phi.CompC[1]);
@@ -150,7 +151,6 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
             if (phi_i.iscomplex()) {
                 Phi[i].defcomplex();
                 for (int comp = 0; comp<Phi[i].Ncomp(); comp++) {
-                    MSG_INFO("b"<< i << " comp="<< comp);
                     if (comp < n_load){
                         // Refine to get accurate function values
                         mrcpp::refine_grid(phi_i.complex(comp), 1);
@@ -163,7 +163,6 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
             o_txt << std::setw(w1 - 1) << i;
             o_txt << std::setw(w3) << print_utils::dbl_to_str(Phi[i].norm(), pprec, true);
             print_utils::qmfunction(1, o_txt.str(), Phi[i], t_i);
-            MSG_INFO("c "<< i);
         }
     }
     // if any orbital of "master" is complex, all are set complex (also the one which are not "mine")
@@ -174,11 +173,11 @@ bool initial_guess::mw::project_mo(OrbitalVector &Phi, double prec, const std::s
     // Each rank only loads orbitals where my_func(Phi[i]) is true. In an MPI run, rank 0 might own zero beta orbitals — its file_ncomp stays 1 even if the files are 2C. But the Kramers swap in setup() runs on all ranks (no my_func guard, same as core/sad). So without a reduction, ranks that loaded nothing would incorrectly trigger the swap while others don't.
     // MPI_Allreduce with MPI_MAX gives all ranks the true maximum component count found across all loaded files. Bcast from rank 0 would be wrong here (rank 0 might have loaded nothing).
     // WARNING: Claude mentions that "The existing MPI_Bcast(&iscomplex, ...) above code has exactly this flaw — if rank 0 owns no orbitals, it broadcasts false even if rank 1 found complex orbitals. "
-#ifdef MRCHEM_HAS_MPI
-    int global_file_ncomp = file_ncomp;
-    MPI_Allreduce(&file_ncomp, &global_file_ncomp, 1, MPI_INT, MPI_MAX, mrcpp::mpi::comm_wrk);
-    file_ncomp = global_file_ncomp;
-#endif
+// #ifdef MRCHEM_HAS_MPI
+//     int global_file_ncomp = file_ncomp;
+//     MPI_Allreduce(&file_ncomp, &global_file_ncomp, 1, MPI_INT, MPI_MAX, mrcpp::mpi::comm_wrk);
+//     file_ncomp = global_file_ncomp;
+// #endif
     if (iscomplex) {
         for (int i = 0; i < Phi.size(); i++) Phi[i].defcomplex();
     }
