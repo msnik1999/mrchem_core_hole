@@ -130,11 +130,11 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
         if (mrcpp::mpi::my_func(phi_i)) {
             double occ = 1.0;
             std::vector<bool> comp_contribution (4, true); //All components contribute to the spin (default case) 
-            if (Phi[0].Ncomp()<2){
+            if (phi_i.Ncomp()<2){
                 occ = density::compute_occupation(phi_i, spin);
                 if (std::abs(occ) < mrcpp::MachineZero) continue;
             } else { 
-                if (Phi[0].Ncomp()>2) MSG_WARN("not tested for 4C, might be undefined behaviour here");
+                if (phi_i.Ncomp()>2) MSG_WARN("not tested for 4C, might be undefined behaviour here");
                 if (spin == DensityType::Alpha) comp_contribution = {true, false, true, false}; //Alpha spin contributions only 
                 if (spin == DensityType::Beta) comp_contribution = {false, true, false, true}; //Beta spin contributions only   
             }

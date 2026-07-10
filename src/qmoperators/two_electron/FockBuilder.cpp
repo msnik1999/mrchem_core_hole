@@ -70,9 +70,7 @@ void FockBuilder::build(double exx) {
     if (this->nuc != nullptr) this->V += (*this->nuc);
     if (this->coul != nullptr) this->V += (*this->coul); 
     if (this->ex != nullptr) this->V -= this->exact_exchange * (*this->ex);
-    MSG_INFO("pre xc is nullptr="<< (this->xc == nullptr));
     if (this->xc != nullptr) this->V += (*this->xc);
-    MSG_INFO("post xc");
     if (this->ext != nullptr) this->V += (*this->ext);
     if (this->Ro != nullptr) this->V -= (*this->Ro);
     if (this->pp_projector != nullptr) this->V += (*this->pp_projector);
@@ -91,53 +89,33 @@ void FockBuilder::setup(double prec) {
 
 
     auto plevel = Printer::getPrintLevel();
-    if (plevel == 2) {
+    if (plevel >= 2) {
         mrcpp::print::header(2, "Building Fock operator");
         mrcpp::print::value(2, "Precision", prec, "(rel)", 5);
         mrcpp::print::separator(2, '-');
     }
-    // // //test TODOD À exécuter
-    // for (auto &i : this->coul()->orbitals) {
-    //     MSG_INFO("Orbital is ")
-    //     // for (int j = 0; j < i.size(); j++) { std::cout << "FockBuilder::setup -- operator: "<< j << " " << i[j] << std::endl; }
-    // }
-    // std::cout << "FockBuilder::setup -- Starting setup of operators: " << &i << std::endl;
-    // if (this->coul != nullptr) this->V += (*this->coul);
-    // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators" << std::endl;
+
     this->prec = prec;
-    // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators 2 "<< (this->mom != nullptr) << std::endl;
     if (this->mom != nullptr) this->momentum().setup(prec);
-    MSG_INFO("is xc nullptr" << (this->xc == nullptr));
     this->potential().setup(prec);
-    // std::cout << "FockBuilder::setup -- Starting setup of kinetic and potential operators 4" << std::endl;
     this->perturbation().setup(prec); //TODO: uncomment when response is implemented for multiple components
 
-    // std::cout << "FockBuilder::setup -- Kinetic and potential operators setup done" << std::endl;
 
     if (isZora()) {
-        // MSG_INFO("Setting up ZORA operators");
-        Timer t_zora; //TODO: make this working for 2C
+        Timer t_zora; 
         double c = getLightSpeed();
-        // MSG_INFO("c ok");
         mrcpp::print::header(3, "Building ZORA operators");
         mrcpp::print::value(3, "Precision", prec, "(rel)", 5);
         mrcpp::print::value(3, "Light speed", c, "(au)", 5);
         mrcpp::print::separator(3, '-');
         auto vz = collectZoraBasePotential();
-        // MSG_INFO("ZORA base potential collected");
         // chi = kappa - 1. See ZoraOperator.h for more information.
         this->chi = std::make_shared<ZoraOperator>(*vz, c, prec, false);
-        // MSG_INFO("ZORA chi operator setup");
         this->chi_inv = std::make_shared<ZoraOperator>(*vz, c, prec, true);
-        // MSG_INFO("ZORA chi inverse operator setup");
         this->zora_base = RankZeroOperator(vz);
-        // MSG_INFO("ZORA base operator setup");
         this->chi->setup(prec);
-        // MSG_INFO("ZORA chi setup ok");
         this->chi_inv->setup(prec);
-        // MSG_INFO("ZORA chi inverse setup ok");
         this->zora_base.setup(prec);
-        // MSG_INFO("ZORA base setup ok");
         mrcpp::print::footer(3, t_zora, 2);
     }
     if (isAZora()) {
@@ -231,7 +209,6 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     double E_nl = 0.0;   // Non-local pseudopotential energy
 
     // Nuclear part
-    // MSG_INFO("nuc");
     if (this->nuc != nullptr) E_nn = chemistry::compute_nuclear_repulsion(nucs);
     if (this->ext != nullptr) E_next = -this->ext->trace(nucs).real();
 
@@ -246,10 +223,14 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     }
 
     // Kinetic part
-    // MSG_INFO("kin");
     if (isZora() || isAZora()) {
-        bool spinorial = (Phi[0].Ncomp() > 1); //assumes all orbitals have the same number of components
-        MSG_INFO("Spinorial = "<< spinorial);
+        // we assume that at least one orbital is owned by this MPI (TODO: allreduce)
+        int Ncomponents = 1;
+        for (int i = 0; i < Phi.size(); i++) {
+            if (!mrcpp::mpi::my_func(i)) continue;
+            Ncomponents = std::max(Ncomponents, Phi[i].Ncomp()); //assumes all owned orbitals have the same number of components
+        }
+        bool spinorial = ( Ncomponents > 1);
         //second term doesn't inclue Pauli matrices (i.e. spinorial is false) because (σ·p)(σ·p) = p^2
         E_kin = qmoperator::calc_kinetic_trace(momentum(), *this->chi, Phi, spinorial).real() + qmoperator::calc_kinetic_trace(momentum(), Phi);
     } else {
@@ -257,7 +238,6 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
     }
 
     // Electronic part
-    // MSG_INFO("ee");
     if (this->nuc != nullptr) { E_en = this->nuc->trace(Phi).real(); }
 
     if (this->coul != nullptr) E_ee = 0.5 * this->coul->trace(Phi).real();
@@ -270,7 +250,6 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
 
     mrcpp::print::footer(2, t_tot, 2);
     if (plevel == 1) mrcpp::print::time(1, "Computing molecular energy", t_tot);
-    // MSG_INFO("trace ok");
 
     return SCFEnergy{E_kin, E_nn, E_en, E_ee, E_x, E_xc, E_next, E_eext, Er_tot, Er_nuc, Er_el, E_nl};
 }
@@ -288,8 +267,17 @@ ComplexMatrix FockBuilder::operator()(OrbitalVector &bra, OrbitalVector &ket) {
         //If we have spinors, the kinetic operator is of the form (σ·p)V(σ·p), with σ being a Pauli matrix.
         //What this boolean does is enabling the application of the Pauli matrices along the x,y,z momentum operators.
         //NOTE! The second term does not change from being spinorial; (σ·p)(σ·p) = p^2 using the Dirac identity.
-        bool spinorial = (bra[0].Ncomp() > 1); //assumes all orbitals have the same number of components
-        T_mat = (qmoperator::calc_kinetic_matrix(momentum(), *this->chi, bra, ket, spinorial) + qmoperator::calc_kinetic_matrix(momentum(), bra, ket));
+        int Ncomponents = 0;
+        for (int i = 0; i < bra.size(); i++) {
+            if (!mrcpp::mpi::my_func(i)) continue;
+            Ncomponents = std::max(Ncomponents, bra[i].Ncomp());
+        }
+        for (int i = 0; i < ket.size(); i++) {
+            if (!mrcpp::mpi::my_func(i)) continue;
+            Ncomponents = std::max(Ncomponents, ket[i].Ncomp());
+        }
+        bool spinorial = (Ncomponents > 1); //assumes all orbitals have the same number of components
+        T_mat = qmoperator::calc_kinetic_matrix(momentum(), *this->chi, bra, ket, spinorial) + qmoperator::calc_kinetic_matrix(momentum(), bra, ket);
     } else {
         T_mat = qmoperator::calc_kinetic_matrix(momentum(), bra, ket);
     }
@@ -327,9 +315,14 @@ OrbitalVector FockBuilder::buildHelmholtzArgument(double prec, OrbitalVector Phi
 
     OrbitalVector out;
     if (isZora()) { //currently no support for AZORA in the new argument formulation
+        int Ncomponents = 1;
+        for (int i = 0; i < Phi.size(); i++) {
+            if (!mrcpp::mpi::my_func(i)) continue;
+            Ncomponents = std::max(Ncomponents, Phi[i].Ncomp());
+        }
         //note: the new formulation is practical for either NR or 2C, but 1C requires a different correction than 2C which is not implemented yet
-        if (Phi[0].Ncomp()==1) out = buildHelmholtzArgumentZORA(Phi, Psi, F_mat.real().diagonal(), prec); 
-        if (Phi[0].Ncomp()>1) out = buildHelmholtzArgumentCompact(Phi, Psi);
+        if (Ncomponents==1) out = buildHelmholtzArgumentZORA(Phi, Psi, F_mat.real().diagonal(), prec); 
+        if (Ncomponents>1) out = buildHelmholtzArgumentCompact(Phi, Psi); //test debug alt propagator
     } else if (isAZora()){
         out = buildHelmholtzArgumentZORA(Phi, Psi, F_mat.real().diagonal(), prec);
     } else {
@@ -378,7 +371,6 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 
     operOne.setup(prec);
     operThree.setup(prec);
-    // MSG_INFO("1 & 3 setup");
 
     // Compute OrbitalVectors
     Timer t_1;
@@ -403,7 +395,12 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
 
     //spin orbit coupling term, which would be identically 0 for scalar functions.
     OrbitalVector termSO(Phi.size());
-    if ((Phi[0].Ncomp() == 2) and isZora()) {
+    int Ncomponents = 1;
+    for (int i = 0; i < Phi.size(); i++) {
+        if (!mrcpp::mpi::my_func(i)) continue;
+        Ncomponents = std::max(Ncomponents, Phi[i].Ncomp());
+    }
+    if ((Ncomponents == 2) and isZora()) {
 
         //Manually implementing the cross product appearing in the spin-orbit term
         //NOTE! The multiplication by the Pauli matrices will need to be handled later,
@@ -451,7 +448,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentZORA(OrbitalVector &Phi, Orbita
         if (not mrcpp::mpi::my_func(arg[i])) continue;
         arg[i].add(1.0, termTwo[i]);
         arg[i].add(1.0, termThree[i]);
-        if ((Phi[0].Ncomp() > 1) and isZora()) arg[i].add(1.0, termSO[i]); //spin-orbit coupling. Is zero for scalar functions.
+        if ((Ncomponents > 1) and isZora()) arg[i].add(1.0, termSO[i]); //spin-orbit coupling. Is zero for scalar functions.
         arg[i].add(1.0, Psi[i]);
     }
     mrcpp::print::time(2, "Adding contributions", t_add);
@@ -500,17 +497,22 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     MomentumOperator &p = momentum();
     RankZeroOperator &V = potential();
     RankZeroOperator &chi = *this->chi;
-    // RankZeroOperator &chi_m1 = *this->chi_inv;
+    // RankZeroOperator &chi_m1 = *this->chi_inv; //not needed in this formulation
 
     // Compute OrbitalVectorso
     Timer t_pot;
     OrbitalVector termOne = V(Phi);
 
     OrbitalVector termTwo(Phi.size());//compute ZORA correction term (σ·p)χ(σ·p)|ψ>
+    int Ncomponents = 1;
     for (int i = 0; i < Phi.size(); i++) {
-        // boolean to toggle the application of the Pauli/gamma matrices to the spinors
-        bool rotate_spin = (Phi[i].Ncomp() > 1); 
-
+        if (!mrcpp::mpi::my_func(i)) continue;
+        Ncomponents = std::max(Ncomponents, Phi[i].Ncomp());
+    }
+    // boolean to toggle the application of the Pauli/gamma matrices to the spinors
+    bool rotate_spin = (Ncomponents > 1); 
+    for (int i = 0; i < Phi.size(); i++) {
+        if (!mrcpp::mpi::my_func(i)) continue;
         // apply (σ_d p_d) to |ψ> (no summation yet)
         std::vector<Orbital> nabla_Phi = p(Phi[i], rotate_spin);
         //sum it up in one temporary term
@@ -540,7 +542,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     OrbitalVector out = orbital::deep_copy(termOne);
     for (int i = 0; i < out.size(); i++) {
         if (not mrcpp::mpi::my_func(out[i])) continue;
-        out[i].add(0.5, termTwo[i]);
+        out[i].add(0.5, termTwo[i]); 
         out[i].add(1.0, Psi[i]);
     };
     mrcpp::print::time(2, "Adding contributions", t_add);
