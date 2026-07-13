@@ -72,34 +72,25 @@ CoulombPotential::CoulombPotential(PoissonOperator_p P, OrbitalVector_p Phi, boo
  */
 void CoulombPotential::setup(double prec) {
     if (isSetup(prec)) {
-        // std::cout << "CoulombPotential::setup -- already setup, skibidipping -----------------------------------" << std::endl;
         return;
     }
-    // std::cout << "CoulombPotential::setup --powpowpping NOT" << std::endl;
     setApplyPrec(prec);
     Timer timer;
     auto plevel = Printer::getPrintLevel();
     mrcpp::print::header(3, "Building Coulomb operator");
     mrcpp::print::value(3, "Precision", prec, "(rel)", 5);
     mrcpp::print::separator(3, '-');
-    // std::cout << "CoulombPotential::setup --powpow-------------Oh hi marc" << std::endl;
     if (hasDensity()) {
         setupGlobalPotential(prec);
-        // std::cout << "CoulombPotential::setup --powpow-----------------Be a bee" << std::endl;
     } else if (mrcpp::mpi::numerically_exact) {
-        // std::cout << "CoulombPotential::setup --powpow----------------EA sports----------" << std::endl;
         setupGlobalDensity(prec);
         setupGlobalPotential(prec);
     } else {
-        // std::cout << "CoulombPotential::setup --powpow--------------Cucumbers---------------1" << std::endl;
         // Keep each local contribution a bit
         // more precise than strictly necessary
         setupLocalDensity(0.1 * prec);
-        // std::cout << "CoulombPotential::setup --powpow--------------Cucumbers 2 Electric Boogaloo---------------" << std::endl;
         mrcpp::CompFunction<3> V = setupLocalPotential(0.1 * prec);
-        // std::cout << "CoulombPotential::setup --powpow--------------Cucumbers 3 Revengence---------------" << std::endl;
         allreducePotential(V);
-        // std::cout << "CoulombPotential::setup --powpow--------------Cucumbers 4 Origins---------------" << std::endl;
     }
     if (plevel == 2) print_utils::qmfunction(2, "Coulomb operator", *this, timer);
     mrcpp::print::footer(3, timer, 2);

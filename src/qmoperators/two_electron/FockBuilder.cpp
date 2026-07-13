@@ -230,6 +230,7 @@ SCFEnergy FockBuilder::trace(OrbitalVector &Phi, const Nuclei &nucs) {
             if (!mrcpp::mpi::my_func(i)) continue;
             Ncomponents = std::max(Ncomponents, Phi[i].Ncomp()); //assumes all owned orbitals have the same number of components
         }
+        Ncomponents = mrcpp::mpi::allreduce_max(Ncomponents, mrcpp::mpi::comm_wrk);
         bool spinorial = ( Ncomponents > 1);
         //second term doesn't inclue Pauli matrices (i.e. spinorial is false) because (σ·p)(σ·p) = p^2
         E_kin = qmoperator::calc_kinetic_trace(momentum(), *this->chi, Phi, spinorial).real() + qmoperator::calc_kinetic_trace(momentum(), Phi);
@@ -276,6 +277,7 @@ ComplexMatrix FockBuilder::operator()(OrbitalVector &bra, OrbitalVector &ket) {
             if (!mrcpp::mpi::my_func(i)) continue;
             Ncomponents = std::max(Ncomponents, ket[i].Ncomp());
         }
+        Ncomponents = mrcpp::mpi::allreduce_max(Ncomponents, mrcpp::mpi::comm_wrk);
         bool spinorial = (Ncomponents > 1); //assumes all orbitals have the same number of components
         T_mat = qmoperator::calc_kinetic_matrix(momentum(), *this->chi, bra, ket, spinorial) + qmoperator::calc_kinetic_matrix(momentum(), bra, ket);
     } else {
@@ -320,6 +322,7 @@ OrbitalVector FockBuilder::buildHelmholtzArgument(double prec, OrbitalVector Phi
             if (!mrcpp::mpi::my_func(i)) continue;
             Ncomponents = std::max(Ncomponents, Phi[i].Ncomp());
         }
+        Ncomponents = mrcpp::mpi::allreduce_max(Ncomponents, mrcpp::mpi::comm_wrk);
         //note: the new formulation is practical for either NR or 2C, but 1C requires a different correction than 2C which is not implemented yet
         if (Ncomponents==1) out = buildHelmholtzArgumentZORA(Phi, Psi, F_mat.real().diagonal(), prec); 
         if (Ncomponents>1) out = buildHelmholtzArgumentCompact(Phi, Psi); //test debug alt propagator
@@ -504,11 +507,13 @@ OrbitalVector FockBuilder::buildHelmholtzArgumentCompact(OrbitalVector &Phi, Orb
     OrbitalVector termOne = V(Phi);
 
     OrbitalVector termTwo(Phi.size());//compute ZORA correction term (σ·p)χ(σ·p)|ψ>
+    //Need to know if we have to apply the σ matrices in a MPI-safe way
     int Ncomponents = 1;
     for (int i = 0; i < Phi.size(); i++) {
         if (!mrcpp::mpi::my_func(i)) continue;
         Ncomponents = std::max(Ncomponents, Phi[i].Ncomp());
     }
+    Ncomponents = mrcpp::mpi::allreduce_max(Ncomponents, mrcpp::mpi::comm_wrk);
     // boolean to toggle the application of the Pauli/gamma matrices to the spinors
     bool rotate_spin = (Ncomponents > 1); 
     for (int i = 0; i < Phi.size(); i++) {
