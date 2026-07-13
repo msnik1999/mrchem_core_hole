@@ -79,7 +79,7 @@ bool initial_guess::mw::setup(OrbitalVector &Phi, double prec, const std::string
     // and emulate the time-reversal operator -iσ_y K0
     if (n_components > 1 && file_ncomp_b == 1) {
         for (auto &phi : Phi_b) {
-            if (mrcpp::mpi::my_func(phi)) continue;
+            if (not mrcpp::mpi::my_func(phi)) continue;
             //swap components
             std::swap(phi.CompD[0], phi.CompD[1]);
             std::swap(phi.CompC[0], phi.CompC[1]);

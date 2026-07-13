@@ -598,7 +598,6 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     std::string xc_lib = json_guess["xc_library"].get<std::string>();
     auto cutoff = json_guess["cutoff"];
 
-    MSG_INFO("start");
     mrcpp::print::separator(0, '~');
     print_utils::text(0, "Calculation    ", "Compute initial energy");
     print_utils::text(0, "Method         ", method);
@@ -619,25 +618,12 @@ bool driver::scf::guess_energy(const json &json_guess, Molecule &mol, FockBuilde
     auto &nucs = mol.getNuclei();
     auto &F_mat = mol.getFockMatrix();
 
-    // MSG_INFO("Pre Fock init ");
-    // for (Orbital phi_i: Phi) {
-    //     MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-    //     phi_i.calcSquareNorm();
-    //     MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-    // }
-
     F_mat = ComplexMatrix::Zero(Phi.size(), Phi.size());
     if (localize && rotate) orbital::localize(prec, Phi, F_mat);
 
-    MSG_INFO("Pre Fock setup");
-
     F.setup(prec);
-    // MSG_INFO("build fock done DaddyCoul=" << F.getCoulombOperator()->trace(Phi));//<< " DaddyExch=" << F.getExchangeOperator()->trace(Phi));
-    std::cout << "driver::scf::guess_energy -- Fock operator setup done nucsize="<< F.getNuclearOperator()->size() << std::endl;
     F_mat = F(Phi, Phi);
-    std::cout << "driver::scf::guess_energy -- Fock matrix computed nuc =" << F.getNuclearOperator()->size() << std::endl;
     mol.getSCFEnergy() = F.trace(Phi, nucs);
-    std::cout << "driver::scf::guess_energy -- SCF energy computed" << std::endl;
     F.clear();
 
 
@@ -1542,40 +1528,30 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
             xc_lib = "xcfun";
         }
 
-        // MSG_INFO("post lib");
         mrdft::Factory xc_factory(*MRA);
-        if (n_components > 1) xc_spin = true; //Spinors require spin differentiated behaviour
-        MSG_INFO("xc_spin="<< xc_spin);
+        if (n_components > 1) xc_spin = false; //2+ Components: real-space/spin-space not separable, always use total density
         xc_factory.setSpin(xc_spin);
         xc_factory.setLibxc((xc_lib == "libxc") ? true : false);
         xc_factory.setOrder(xc_order);
         xc_factory.setDensityCutoff(xc_cutoff);
-        // MSG_INFO("cutoff");
         for (const auto &f : xc_funcs) {
             auto name = f["name"];
             auto coef = f["coef"];
             xc_factory.setFunctional(name, coef);
         }
-        // MSG_INFO("set func");
         auto mrdft_p = xc_factory.build();
-        // MSG_INFO("built");
 
         mrdft_p->functional().print_functional_references();
 
-        // MSG_INFO("pre xc amount");
         exx = mrdft_p->functional().amountEXX();
-        // MSG_INFO("xc amount");
 
         if (order == 0) {
             auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_p, shared_memory);
-            // MSG_INFO("op set");
             if (mol.hasNLCCPseudopotential()) {
                 std::shared_ptr<Nuclei> nuclei = std::make_shared<Nuclei>(mol.getPseudoPotentialNuclei());
                 XC_p->setNuclei(nuclei);
-                // MSG_INFO("nuc set");
             }
             F.getXCOperator() = XC_p;
-            MSG_INFO("xc given to F is nullptr"<<(F.getXCOperator() == nullptr)<< " og="<< (XC_p == nullptr));
         } else if (order == 1) {
             auto XC_p = std::make_shared<XCOperator>(mrdft_p, Phi_p, X_p, Y_p, shared_memory);
             F.getXCOperator() = XC_p;
