@@ -129,12 +129,14 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
     for (auto &phi_i : Phi) {
         if (mrcpp::mpi::my_func(phi_i)) {
             double occ = 1.0;
-            std::vector<bool> comp_contribution (4, true); //All components contribute to the spin (default case) 
+            std::vector<bool> comp_contribution (4, true); //All components contribute to the density (default case) 
             if (phi_i.Ncomp()<2){
                 occ = density::compute_occupation(phi_i, spin);
                 if (std::abs(occ) < mrcpp::MachineZero) continue;
-            } else { 
-                if (phi_i.Ncomp()>2) MSG_WARN("not tested for 4C, might be undefined behaviour here");
+            } else { //spinorial case 
+                if (std::abs(phi_i.occ()-1.0)>mrcpp::MachineZero) MSG_WARN("Occupation contribution not implemented. Spinor will contribute as if occ()==1.0");
+                if (phi_i.Ncomp()>2) MSG_WARN("not tested for 4C, might be undefined behaviour here, have fun Jacopo");
+                //See above, default contribution is {true, true, true, true}
                 if (spin == DensityType::Alpha) comp_contribution = {true, false, true, false}; //Alpha spin contributions only 
                 if (spin == DensityType::Beta) comp_contribution = {false, true, false, true}; //Beta spin contributions only   
             }

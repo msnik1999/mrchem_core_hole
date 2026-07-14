@@ -293,10 +293,10 @@ json driver::scf::run(const json &json_scf, Molecule &mol) {
     ///////////////////////////////////////////////////////////
     ////////////////   Building Fock Operator   ///////////////
     ///////////////////////////////////////////////////////////
-    std::cout << "driver::scf::run Fock start" << std::endl;
     FockBuilder F;
     const auto &json_fock = json_scf["fock_operator"];
-    driver::build_fock_operator(json_fock, mol, F, 0, n_components); 
+    std::cout << "driver::scf::run Fock start " << n_components<< std::endl;
+    driver::build_fock_operator(json_fock, mol, F, 0, true, n_components); 
 
     // Pre-compute internal exchange contributions
     if (F.getExchangeOperator()) F.getExchangeOperator()->setPreCompute();
@@ -538,7 +538,7 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
         type = "nao";
     }
 
-    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto") || (type == "mw") || (type == "nao"))) {
+    if (n_components > 1 && not((type == "sad") ||  (type == "sad_gto") || (type == "mw") || (type == "nao")|| (type == "core"))) {
         MSG_ERROR("Initial guess type "<< type << " not implemented for spinors");
         return false;
     }
@@ -546,7 +546,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     if (type == "chk") {
         success = initial_guess::chk::setup(Phi, file_chk);
     } else if (type == "mw") {
-        MSG_INFO("mw");
         success = initial_guess::mw::setup(Phi, prec, mw_p, mw_a, mw_b, n_components);
     } else if (type == "core") {
         success = initial_guess::core::setup(Phi, prec, nucs, zeta, n_components);
@@ -1303,7 +1302,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     ///////////////////////////////////////////////////////////
     ///////////////      Momentum Operator    /////////////////
     ///////////////////////////////////////////////////////////
-    std::cout << "driver::build_fock_operator: Building Momentum operator..." << std::endl;
     if (json_fock.contains("kinetic_operator")) {
         auto kin_diff = json_fock["kinetic_operator"]["derivative"];
         auto D_p = driver::get_derivative(kin_diff);
@@ -1313,7 +1311,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     ///////////////////////////////////////////////////////////
     //////////////////   Nuclear Operator   ///////////////////
     ///////////////////////////////////////////////////////////
-    std::cout << "driver::build_fock_operator: I'm nuclear " << std::endl;
     if (json_fock.contains("nuclear_operator")) {
 
         auto nuc_model = json_fock["nuclear_operator"]["nuclear_model"];
@@ -1337,7 +1334,6 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     ///////////////////////////////////////////////////////////
     //////////////////////   Zora Operator   //////////////////
     ///////////////////////////////////////////////////////////
-    std::cout << "driver::build_fock_operator: Zora temple" << std::endl;
     if (json_fock.contains("zora_operator")) {
         auto c = PhysicalConstants::get("light_speed");
         F.setLightSpeed(c);
@@ -1378,19 +1374,15 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
     ///////////////////////////////////////////////////////////
     //////////////////   Coulomb Operator   ///////////////////
     ///////////////////////////////////////////////////////////
-    std::cout << "driver::build_fock_operator: Building Coulomb operator..." << std::endl;
     if (json_fock.contains("coulomb_operator")) {
-        std::cout << "driver::build_fock_operator: tut 1" << std::endl;
         auto poisson_prec = json_fock["coulomb_operator"]["poisson_prec"];
         auto shared_memory = json_fock["coulomb_operator"]["shared_memory"];
         auto P_p = std::make_shared<PoissonOperator>(*MRA, poisson_prec);
         if (order == 0) {
-            std::cout << "driver::build_fock_operator: tut pert order 0" << std::endl;
             auto J_p = std::make_shared<CoulombOperator>(P_p, Phi_p, shared_memory);
             F.getCoulombOperator() = J_p;
             MSG_INFO("Coulomb value="<< F.getCoulombOperator()->trace(*Phi_p));
         } else if (order == 1) {
-            std::cout << "driver::build_fock_operator: tut pert order 1" << std::endl;
             auto J_p = std::make_shared<CoulombOperator>(P_p, Phi_p, X_p, Y_p, shared_memory);
             F.getCoulombOperator() = J_p;
         } else {
@@ -1530,6 +1522,7 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
 
         mrdft::Factory xc_factory(*MRA);
         if (n_components > 1) xc_spin = false; //2+ Components: real-space/spin-space not separable, always use total density
+        MSG_INFO("qqqqqqqqqqqqqq "<< n_components <<" xc_spin="<< xc_spin);
         xc_factory.setSpin(xc_spin);
         xc_factory.setLibxc((xc_lib == "libxc") ? true : false);
         xc_factory.setOrder(xc_order);
