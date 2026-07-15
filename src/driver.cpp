@@ -453,7 +453,6 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
 
     // Fill orbital vector
     auto &nucs = mol.getNuclei();
-    std::cout << "driver::scf::guess_orbitals -- nuclei ok" << std::endl;
     auto &Phi = mol.getOrbitals();
     for (auto p = 0; p < Np; p++) Phi.push_back(Orbital(SPIN::Paired, n_components));
     for (auto a = 0; a < Na; a++) Phi.push_back(Orbital(SPIN::Alpha, n_components));
@@ -550,10 +549,8 @@ bool driver::scf::guess_orbitals(const json &json_guess, const json &json_occ, M
     } else if (type == "core") {
         success = initial_guess::core::setup(Phi, prec, nucs, zeta, n_components);
     } else if (type == "sad") {
-        std::cout << "driver::scf::guess_orbitals -- SAD setup start" << std::endl;
         success = initial_guess::sad::setup(Phi, prec, screen, nucs, zeta, n_components);
     } else if (type == "sad_gto") {
-        std::cout << "driver::scf::guess_orbitals -- SAD GTO setup start" << std::endl;
         success = initial_guess::sad::setupGTO(Phi, prec, screen, nucs, n_components);
     } else if (type == "gto") {
         success = initial_guess::gto::setup(Phi, prec, screen, gto_bas, gto_p, gto_a, gto_b);

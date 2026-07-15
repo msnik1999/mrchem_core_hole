@@ -177,29 +177,29 @@ void ExchangePotential::calcExchange_kij(double prec, Orbital phi_k, Orbital phi
     double prec_p = prec * 10;   // Poisson application
     double prec_m2 = prec / 100; // second multiplication
 
-    // compute rho_ij = phi_i^dagger * phi_j
+    // compute rho_ij = phi_i^* x phi_j (NOT phi_i^dagger dot phi_j, what is should be but not yet implemented)
     // if the product is smaller than the target precision,
     // the result is expected to be negligible
     Timer timer_ij;
     Orbital rho_ij = phi_i.paramCopy(true);
+    if (phi_i.Ncomp()>1) MSG_WARN("Components are not summed over, exchange is computed component-wise (not physical). Need new implementation")
     mrcpp::multiply(rho_ij, phi_i, phi_j, prec_m1, true, true, true);
     timer_ij.stop();
-    // if (rho_ij.norm() < prec) return;
-    if (rho_ij.norm() < prec){ //test debug 
-        //resetting out_kij to a default real definition rather than the complex it might have inherited from phi 
+
+    //resetting out_kij to a default real definition rather than the complex it might have inherited from phi 
+    if (rho_ij.norm() < prec){ 
         out_kij.func_ptr->isreal = 1;
         out_kij.func_ptr->iscomplex = 0;
         out_kij.alloc(rho_ij.Ncomp(), true);
         return;
     }
-    // MSG_INFO("tut exchange badim" << rho_ij.norm());
 
     auto N_i = phi_i.getNNodes();
     auto N_j = phi_j.getNNodes();
     auto N_ij = rho_ij.getNNodes();
     auto norm_ij = rho_ij.norm();
-    // For now we assume all phi are complex or all ar real.
 
+    // For now we assume all phi are complex or all ar real.
     bool RealOrbitals = phi_i.isreal();
 
     Orbital V_ij = rho_ij.paramCopy(true); //multicomp test
@@ -236,15 +236,12 @@ void ExchangePotential::calcExchange_kij(double prec, Orbital phi_k, Orbital phi
     auto N_p = V_ij.getNNodes();
     auto norm_p = V_ij.norm();
 
-    // MSG_INFO("norme phi_k (premier arg)" << phi_k.getSquareNorm() << " et V_ij=" << V_ij.getSquareNorm() << " Ncomps respectifs=" << phi_k.func_ptr->data.c1[0] << " " << phi_k.func_ptr->data.c1[1] << " " << V_ij.func_ptr->data.c1[0] << " " << V_ij.func_ptr->data.c1[1]);
     // compute out_kij = phi_k * V_ij
     Timer timer_kij;
     mrcpp::multiply(out_kij, phi_k, V_ij, prec_m2, true, true); //problème ici
     auto N_kij = out_kij.getNNodes();
     auto norm_kij = out_kij.norm();
     timer_kij.stop();
-
-    // MSG_INFO("exchangetut mid");
     
     // compute out_jji = phi_j * V_ji = phi_j * V_ij^dagger
     Timer timer_jji;

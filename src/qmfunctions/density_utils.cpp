@@ -142,7 +142,14 @@ void density::compute_local(double prec, Density &rho, OrbitalVector &Phi, Densi
             }
             Density rho_i; 
 
-            rho_i.alloc(1, true);
+            // copy_grid in 1C to match the master branch and tests. Doesn't work for 2C
+            // Haven't really investigated, don't have(/want to spend) the time to find
+            // what's wrong just for performance right now
+            // The cost in performance _is_ great, though. ~3x the time to build a 2C density
+            // partly because of the trees needing to be rebuilt.
+            if (phi_i.Ncomp() == 1) mrcpp::copy_grid(rho_i, phi_i); //faster, but problematic because it doesn't work for 2C.
+            else rho_i.alloc(1, true); //2C consistent, but slow
+            // mrcpp::copy_grid(rho_i, phi_i, 1); // doesn't work in 2C
 
             mrcpp::make_density(rho_i, phi_i, prec, comp_contribution); // always returns real density
 

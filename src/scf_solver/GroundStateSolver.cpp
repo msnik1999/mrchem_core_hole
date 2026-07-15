@@ -37,6 +37,8 @@
 #include "qmoperators/two_electron/FockBuilder.h"
 #include "qmoperators/two_electron/ReactionOperator.h"
 
+#include <MRCPP/utils/spinor_utils.h> //debug, remove when done
+
 using mrcpp::Printer;
 using mrcpp::Timer;
 using nlohmann::json;
@@ -279,12 +281,6 @@ json GroundStateSolver::optimize(Molecule &mol, FockBuilder &F) {
         o_header << "SCF cycle " << nIter;
         mrcpp::print::header(1, o_header.str(), 0, '#');
         mrcpp::print::separator(2, ' ', 1);
-        // MSG_INFO("start iter");
-        for (Orbital phi_i: Phi_n) {
-            // MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-            phi_i.calcSquareNorm();
-            // MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-        }
 
         // Initialize SCF cycle
         Timer t_scf;
@@ -292,61 +288,47 @@ json GroundStateSolver::optimize(Molecule &mol, FockBuilder &F) {
         double helm_prec = getHelmholtzPrec();
         if (nIter < 2) {
             if (F.getReactionOperator() != nullptr) F.getReactionOperator()->updateMOResidual(err_t);
-            // MSG_INFO("pre setup iter<2");
             F.setup(orb_prec);
         }
-        // MSG_INFO("begin helmholtz");
 
         // Init Helmholtz operator
         HelmholtzVector H(helm_prec, F_mat.real().diagonal());
         ComplexMatrix L_mat = H.getLambdaMatrix();
         
-        // MSG_INFO("pre helmholtz argument");
-        for (Orbital phi_i: Phi_n) {
-            // MSG_INFO("Phi n i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-            phi_i.calcSquareNorm();
-            // MSG_INFO("Phi n i  norm=" << phi_i.getSquareNorm()); 
-        }
         // Apply Helmholtz operator
         OrbitalVector Psi = F.buildHelmholtzArgument(orb_prec, Phi_n, F_mat, L_mat);
-        // MSG_INFO("SCF argument done");
-        for (Orbital phi_i: Psi) {
-            // MSG_INFO("psi i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-            phi_i.calcSquareNorm();
-            // MSG_INFO("psi i  norm=" << phi_i.getSquareNorm()); 
-        }
         OrbitalVector Phi_np1 = H(Psi);
-        // MSG_INFO("applied ok");
-        for (Orbital phi_i: Phi_np1) {
-            // MSG_INFO("phi i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-            phi_i.calcSquareNorm();
-            // MSG_INFO("phi i  norm=" << phi_i.getSquareNorm()); 
-        }
         Psi.clear();
         F.clear();
-        // MSG_INFO("cleared ok");
         // Orthonormalize
         orbital::orthonormalize(orb_prec, Phi_np1, F_mat); //TODO: include Kramers symmetry when restricted and 2c
-        // MSG_INFO("orthonorm ok");
-        for (Orbital phi_i: Phi_np1) {
-            // MSG_INFO("phi i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-        }
+
+        // //--Test of Kramers pairing -- debug
+        // MSG_WARN("DEBUG REMOVE WHEN DONE");
+        // int nhalf = std::floor(Phi_np1.size()/2);
+        // for (int orbitale=0; orbitale < nhalf; orbitale++){
+        //     Orbital kramphi;
+        //     mrcpp::deep_copy(kramphi, Phi_np1[orbitale]);
+        //     // Complex conjugate the copy of ket[j]
+        //     kramphi.conj(); //note: only changes a flag that will affect the dot product. Would be problematic if the rest of the time-reversal was imaginary, as it would be conjugated too during the dot. 
+        //     // apply σ_y (2C ONLY) to it
+        //     mrcpp::apply_gamma(kramphi, 2); //σ_y
+        //     //multiply by -i
+        //     ComplexDouble cplx_i = {0.0, 1.0}; 
+        //     kramphi.func_ptr->data.c1[0] *= -cplx_i;
+        //     kramphi.func_ptr->data.c1[1] *= -cplx_i;
+        //     for (int sblam=0; sblam < Phi_np1.size(); sblam++){
+        //         ComplexDouble kramdot = mrcpp::dot(Phi_np1[sblam], kramphi);
+        //         MSG_INFO("Kramers pairing for orbital="<< sblam << ", "<< orbitale << " is ="<< kramdot );
+        //     }
+        // }
+        // //--End test
 
         // Compute orbital updates
-        Phi_np1[0].calcSquareNorm(); // debug test
-        Phi_np1[1].calcSquareNorm(); // debug test
-        // MSG_INFO("phi_n+1 norms 1)" << Phi_np1[0].getSquareNorm() << " 2) " << Phi_np1[1].getSquareNorm());
         OrbitalVector dPhi_n = orbital::add(1.0, Phi_np1, -1.0, Phi_n);
-        // MSG_INFO("Kain update psi ok");
         Phi_np1.clear();
-        // MSG_INFO("phi n+1 cleared");
-
-        for (Orbital phi_i: dPhi_n) {
-            // MSG_INFO("phi i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-        }
 
         kain.accelerate(orb_prec, Phi_n, dPhi_n);
-        // MSG_INFO("got kain'd");
 
         // Compute errors
         errors = orbital::get_norms(dPhi_n);
@@ -390,20 +372,12 @@ json GroundStateSolver::optimize(Molecule &mol, FockBuilder &F) {
             Phi_mom = orbital::deep_copy(Phi_n);
 
         orbital::orthonormalize(orb_prec, Phi_n, F_mat);
-        // MSG_INFO("post orthonorm post kain");
-        for (Orbital phi_i: Phi_n) {
-            // MSG_INFO("phi i is real=" << phi_i.isreal() <<", is complex=" << phi_i.iscomplex()); 
-        }
 
         // Compute Fock matrix and energy
         if (F.getReactionOperator() != nullptr) F.getReactionOperator()->updateMOResidual(err_t);
-        // MSG_INFO("presetup again");
         F.setup(orb_prec);
-        // MSG_INFO("setup passed");
         F_mat = F(Phi_n, Phi_n);
-        // MSG_INFO("F_mat passed");
         E_n = F.trace(Phi_n, nucs);
-        // MSG_INFO("F trace passed");
 
         // Collect convergence data
         this->error.push_back(err_t);
@@ -416,54 +390,37 @@ json GroundStateSolver::optimize(Molecule &mol, FockBuilder &F) {
         json_cycle["energy_total"] = E_n.getTotalEnergy();
         json_cycle["energy_update"] = err_p;
 
-        // MSG_INFO("Collected convergence data");
 
         // Rotate orbitals
         if (needLocalization(nIter, converged)) {
-            // MSG_INFO("localisation");
             ComplexMatrix U_mat = orbital::localize(orb_prec, Phi_n, F_mat);
             F.rotate(U_mat);
             kain.clear();
         } else if (needDiagonalization(nIter, converged)) {
-            // MSG_INFO("diagonalisation tut");
             ComplexMatrix U_mat = orbital::diagonalize(orb_prec, Phi_n, F_mat);
-            // MSG_INFO("diagonalising");
             F.rotate(U_mat);
-            // MSG_INFO("rotated");
             kain.clear();
-            // MSG_INFO("kain cleared");
         }
-
-        // MSG_INFO("Rotated orbitals for localisation");
 
         // Save checkpoint file
         if (this->checkpoint) orbital::save_orbitals(Phi_n, this->chkFile);
-        // if (this->checkpoint) MSG_INFO("DEBUG REMOVE IF IMPLEMENTED---Saved orbitals to files (should not happen)");
 
         // Finalize SCF cycle
         if (plevel < 1) printConvergenceRow(nIter);
-        // MSG_INFO("1");
         printOrbitals(F_mat.real().diagonal(), errors, Phi_n, 0);
         mrcpp::print::separator(1, '-');
         printResidual(err_t, converged);
         mrcpp::print::separator(2, '=', 2);
-        // MSG_INFO("2");
         printProperty();
-        // MSG_INFO("3");
         printMemory();
-        // MSG_INFO("4");
         t_scf.stop();
         json_cycle["wall_time"] = t_scf.elapsed();
         mrcpp::print::footer(1, t_scf, 2, '#');
         mrcpp::print::separator(2, ' ', 2);
-        // MSG_INFO("almost done cycle aa");
 
         json_out["cycles"].push_back(json_cycle);
-        // MSG_INFO("almost done cycle b");
         if (converged) break;
-        // MSG_INFO("done cycle");
     }
-
     F.clear();
     mrcpp::mpi::barrier(mrcpp::mpi::comm_wrk);
 
