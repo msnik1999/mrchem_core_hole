@@ -134,21 +134,18 @@ void QMPotential::calc(mrcpp::CompFunction<3> &out, mrcpp::CompFunction<3> &inp,
     // if (dagger and inp.iscomplex()) MSG_INFO("DAGGER OPERATOR NEEDS TO BE CHECKED"); //it should be good now
     if (inp.conjugate()) MSG_ERROR("Not implemented");
 
-    // mrcpp::CompFunction<3> &V = *this; //original
-    // MSG_INFO("test"); //test debug
-    mrcpp::CompFunction<3> V = this->paramCopy(true); //test debug
-    mrcpp::deep_copy(V, *this); // test debug
+    mrcpp::CompFunction<3> V = this->paramCopy(true); 
+    mrcpp::deep_copy(V, *this); 
     double coef = 1.0;
     mrcpp::copy_grid(out, inp);
-    if (inp.Ncomp() == V.Ncomp()){ //test debug
-        // MSG_INFO("inp.Ncomp=" << inp.Ncomp() << " V.comp=" << V.Ncomp()); //test debug
-        mrcpp::multiply(out, inp, V, prec, false, false, dagger); //test debug
-    } else { //test debug
+    if (inp.Ncomp() == V.Ncomp()){ 
+        mrcpp::multiply(out, inp, V, prec, false, false, dagger); 
+    } else { 
         //single component potential 
-        mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger); //original
+        mrcpp::multiply(out, inp, *V.CompD[0], prec, false, false, dagger);
         //since we treat V as a functionTree we need to apply its prefactor c1 manually.
         for (int comp = 0; comp < out.Ncomp(); comp++) out.func_ptr->data.c1[comp] *= V.func_ptr->data.c1[0];
-    } //test debug
+    } 
 }
 
 } // namespace mrchem
