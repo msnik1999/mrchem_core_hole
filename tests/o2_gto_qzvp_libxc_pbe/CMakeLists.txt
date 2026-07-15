@@ -4,7 +4,7 @@ endif()
 
 add_integration_test(
   NAME "O2_gto_QZVP_libxc_pbe"
-  LABELS "mrchem;O2;dft;gga;pbe;gto;libxc;short"
+  LABELS "mrchem;O2;dft;gga;pbe;gto;libxc;medium"
   COST 100
   LAUNCH_AGENT ${_o2_gto_QZVP_libxc_pbe_launcher}
   INITIAL_GUESS ${CMAKE_CURRENT_LIST_DIR}/initial_guess
