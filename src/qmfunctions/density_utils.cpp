@@ -100,6 +100,7 @@ Density density::compute(double prec, Orbital phi, DensityType spin) {//outputs 
     //note that we crop the phi*phi, because the square makes small smaller
     rho.crop(prec);  // Truncates to given precision
     //test end
+    return rho;
 }
 
 /** @brief Compute density as the sum of squared orbitals
