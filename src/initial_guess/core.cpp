@@ -226,7 +226,7 @@ void initial_guess::core::project_ao(OrbitalVector &Phi, double prec, const Nucl
                     //The AOs are all projected to the first component of Phi regardless of the number of components
                     //It is easier to distribute them among the components in rotate() than to create a
                     //degenerate guess (for 2C+) here that will be mixed during diagonalisation
-                    mrcpp::project(Phi.back(), h_func, prec, 0); 
+                    mrcpp::project(Phi.back(), h_func, prec, 1); 
                     if (std::abs(Phi.back().norm() - 1.0) > 0.01) MSG_WARN("AO not normalized!");
                 }
 
