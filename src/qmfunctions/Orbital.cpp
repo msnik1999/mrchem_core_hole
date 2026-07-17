@@ -35,10 +35,9 @@ namespace mrchem {
  *
  * Initializes with NULL tree pointers.
  */
-Orbital::Orbital(SPIN::type spin, int n_comp) //TODO: ajouter alloc_comp? 
+Orbital::Orbital(SPIN::type spin, int n_comp)
         : mrcpp::CompFunction<3>(spin, n_comp) {
     if (this->spin() < 0) INVALID_ARG_ABORT;
-    std::cout << "Orbital::Orbital constructor with spin: " << this->spin() << std::endl;
     // d1 is used to store occupancy
     if (this->spin() == SPIN::Paired) this->func_ptr->data.d1[0] = 2.0;
     if (this->spin() == SPIN::Alpha) this->func_ptr->data.d1[0] = 1.0;
@@ -54,7 +53,6 @@ Orbital::Orbital(SPIN::type spin, int n_comp) //TODO: ajouter alloc_comp?
  */
 Orbital::Orbital(int spin, double occ, int rank, int n_comp)
         : mrcpp::CompFunction<3>(spin, n_comp) {
-        std::cout << "Orbital::Orbital other constructor with spin: " << this->spin() << std::endl;
     if (this->spin() < 0) INVALID_ARG_ABORT;
     if (this->occ() < 0) {
         // d1 is defined as occupancy
@@ -84,8 +82,6 @@ Orbital::Orbital(const Orbital &orb)
  * NO transfer of ownership:
  * both orbitals are pointing to the same tree
  */
-// Orbital::Orbital(const mrcpp::CompFunction<3> &orb)
-//         : mrcpp::CompFunction<3>(orb) {}
 Orbital::Orbital(const mrcpp::CompFunction<3> &orb)
         : mrcpp::CompFunction<3>(orb) {}
 
@@ -102,32 +98,6 @@ Orbital Orbital::dagger() const {
     return out; // Return shallow copy
 }
 
-// /** @brief Write orbital to disk //DEPRECATED; implemented in orbital_utils
-//  *
-//  * @param file: file name prefix
-//  *
-//  * Given a file name prefix (e.g. "phi_0"), this will produce separate
-//  * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
-//  * and imaginary ("phi_0_im.tree") parts.
-//  */
-// void Orbital::saveOrbital(const std::string &file) {
-//     if (isreal()) CompD[0]->saveTree(file);
-//     if (iscomplex()) CompC[0]->saveTree(file);
-// }
-
-// /** @brief Read orbital from disk //DEPRECATED; implemented in orbital_utils
-//  *
-//  * @param file: file name prefix
-//  *
-//  * Given a file name prefix (e.g. "phi_0"), this will read separate
-//  * binary files for meta data ("phi_0.meta"), real ("phi_0_re.tree")
-//  * and imaginary ("phi_0_im.tree") parts.
-//  */
-// void Orbital::loadOrbital(const std::string &file) {
-//     if (isreal()) CompD[0]->loadTree(file);
-//     if (iscomplex()) CompC[0]->loadTree(file);
-// }
-
 /** @brief Returns a character representing the spin (a/b/p) */
 char Orbital::printSpin() const {
     char sp = 'u';
@@ -136,13 +106,5 @@ char Orbital::printSpin() const {
     if (this->spin() == SPIN::Beta) sp = 'b';
     return sp;
 }
-
-// Orbital Orbital::apply_alpha_matrix(int alpha, bool conjugate) const {
-//     //placeholder
-//     Orbital out(*this); // Shallow copy
-//     out.func_ptr->conj = not this->conjugate();
-//     return out; // Return shallow copy
-// }
-
 
 } // namespace mrchem
