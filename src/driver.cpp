@@ -1153,7 +1153,7 @@ bool driver::rsp::guess_orbitals(const json &json_guess, Molecule &mol) {
         } else if (type == "mw") {
             success_y = initial_guess::mw::setup(Y, prec, mw_yp, mw_ya, mw_yb);
         } else if (type == "cube") {
-            success_x = initial_guess::cube::setup(Y, prec, cube_yp, cube_ya, cube_yb);
+            success_y = initial_guess::cube::setup(Y, prec, cube_yp, cube_ya, cube_yb);
         } else if (type == "none") {
             mrcpp::print::separator(0, '~');
             print_utils::text(0, "Calculation     ", "Compute initial orbitals");
