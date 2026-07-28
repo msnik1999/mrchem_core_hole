@@ -344,10 +344,15 @@ def write_scf_properties(user_dict, origin):
 
 def write_scf_plot(user_dict):
     plot_dict = {}
-    if user_dict["Properties"]["plot_density"] or len(
-        user_dict["Properties"]["plot_orbitals"]
+    if (
+        user_dict["Properties"]["plot_density"]
+        or len(user_dict["Properties"]["plot_orbitals"])
+        or len(user_dict["Properties"]["plot_orbital_densities"])
     ):
         plot_dict["orbitals"] = user_dict["Properties"]["plot_orbitals"]
+        plot_dict["orbital_densities"] = user_dict["Properties"][
+            "plot_orbital_densities"
+        ]
         plot_dict["density"] = user_dict["Properties"]["plot_density"]
         plot_dict["plotter"] = user_dict["Plotter"]
         if user_dict["world_unit"] == "angstrom":

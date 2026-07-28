@@ -347,7 +347,7 @@ User input reference
     **Predicates**
       - ``value.lower() in ['none', 'zora', 'nzora', 'azora']``
   
-   :environment: Set method for treatment of environment. ``none`` for vacuum calculation. ``PCM`` for Polarizable Continuum Model, which will activate the ``PCM`` input section for further parametrization options. The ``PB`` and ``LPB`` variants add the Poisson-Boltzmann and Linearized Poisson-Boltzmann solvers, respectively. 
+   :environment: Set method for treatment of envicononment. ``none`` for vacuum calculation. ``PCM`` for Polarizable Continuum Model, which will activate the ``PCM`` input section for further parametrization options. The ``PB`` and ``LPB`` variants add the Poisson-Boltzmann and Linearized Poisson-Boltzmann solvers, respectively. 
   
     **Type** ``str``
   
@@ -364,7 +364,7 @@ User input reference
   
     **Predicates**
       - ``value.lower() in ['point_like', 'point_parabola', 'point_minimal', 'finite_gaussian', 'finite_sphere']``
-    
+  
    :spinor_components: Number of spinor components in the wavefunction. 1 corresponds to scalar wavefunctions,  2 for Weyl or Pauli spinors (Standard for 2C methods), and 4 represent Dirac spinors. 
   
     **Type** ``int``
@@ -389,7 +389,7 @@ User input reference
   
     **Default** ``user['world_prec']``
   
- :ZORA: Define required parameters for the ZORA Hamiltonian.  
+ :ZORA: Define required parameters for the ZORA Hamiltonian. 
 
   :red:`Keywords`
    :include_nuclear: Include the nuclear potential ``V_nuc`` in the ZORA potential. 
@@ -483,6 +483,12 @@ User input reference
     **Default** ``False``
   
    :plot_orbitals: Plot converged molecular orbitals from list of indices, negative index plots all orbitals. 
+  
+    **Type** ``List[int]``
+  
+    **Default** ``[]``
+  
+   :plot_orbital_densities: Plot converged orbital densities (:math:`|\phi_i|^2`, summed over spinor components) from list of indices, negative index plots all orbitals. This is the relevant quantity to plot for multi-component (spinor) orbitals, where the orbital itself is not a single real-valued function. 
   
     **Type** ``List[int]``
   

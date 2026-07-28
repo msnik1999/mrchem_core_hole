@@ -454,6 +454,15 @@ sections:
         docstring: |
           Plot converged molecular orbitals from list of indices, negative index
           plots all orbitals.
+      - name: plot_orbital_densities
+        type: List[int]
+        default: []
+        docstring: |
+          Plot converged orbital densities (:math:`|\phi_i|^2`, summed over
+          spinor components) from list of indices, negative index plots all
+          orbitals. This is the relevant quantity to plot for multi-component
+          (spinor) orbitals, where the orbital itself is not a single
+          real-valued function.
       - name: hirshfeld_charges
         type: bool
         default: false

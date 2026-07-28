@@ -50,7 +50,6 @@ extern mrcpp::MultiResolutionAnalysis<3> *MRA; // Global MRA
  ****************************************/
 
 namespace density {
-Density compute(double prec, Orbital phi, DensityType spin);
 void compute_local_X(double prec, Density &rho, OrbitalVector &Phi, OrbitalVector &X, DensityType spin);
 void compute_local_XY(double prec, Density &rho, OrbitalVector &Phi, OrbitalVector &X, OrbitalVector &Y, DensityType spin);
 double compute_occupation(const Orbital &phi, DensityType dens_spin);
