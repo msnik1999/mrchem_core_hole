@@ -1,17 +1,13 @@
-find_package( Catch2 3.8.0 CONFIG)
-if( NOT Catch2_FOUND )
-  message( STATUS "Could NOT Find Catch2 (Building v3.8.0 Locally)" )
-  include( FetchContent )
-  FetchContent_Declare(
-    catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.8.0
+set(CPM_USE_LOCAL_PACKAGES ON)
+CPMAddPackage(
+  NAME Catch2
+  VERSION 3.8.0
+  GITHUB_REPOSITORY catchorg/Catch2
+  FIND_PACKAGE_ARGUMENTS "CONFIG"
+  OPTIONS
+  "BUILD_TESTING OFF"
   )
-  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(catch2)
-else()
-  message( STATUS "Found Catch2 VERSION ${Catch2_VERSION} DIR ${Catch2_DIR}" )
-endif()
+unset(CPM_USE_LOCAL_PACKAGES)
 
 add_executable(mrchem-tests unit_tests.cpp)
 
