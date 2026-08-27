@@ -1316,8 +1316,8 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         bool is_azora = json_fock["zora_operator"]["isAZORA"];
         F.setZoraType(include_nuclear, include_coulomb, include_xc, is_azora);
         if (is_azora) {
-            std::string azora_dir_src = AZORA_POTENTIALS_SOURCE_DIR;
-            std::string azora_dir_install = AZORA_POTENTIALS_INSTALL_DIR;
+            std::string azora_dir_src = azora_potentials_source_dir();
+            std::string azora_dir_install = azora_potentials_install_dir();
             std::string azora_dir = "";
             if (json_fock["zora_operator"].contains("azora_potential_path")) { azora_dir = json_fock["zora_operator"]["azora_potential_path"]; }
 
