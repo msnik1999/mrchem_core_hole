@@ -1,3 +1,7 @@
+option(ENABLE_TESTS "Enable test suite" ON)
+
+if(ENABLE_TESTS)
+
 set(CPM_USE_LOCAL_PACKAGES ON)
 CPMAddPackage(
   NAME Catch2
@@ -63,3 +67,5 @@ add_subdirectory(lih_core_hole)
 add_subdirectory(na_pp_scf_hf)
 add_subdirectory(ne_zora_scf_pbe)
 add_subdirectory(o2_gto_qzvp_libxc_pbe)
+
+endif()

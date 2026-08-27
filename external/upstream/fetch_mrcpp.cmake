@@ -2,8 +2,8 @@ cpm_set_find_behaviour(${MRCPP_FIND_BEHAVIOUR})
 set(CMAKE_BUILD_TYPE Release)
 set(Eigen3_DIR ${eigen3_BINARY_DIR})
 CPMAddPackage(
-  NAME mrcpp
-
+  NAME MRCPP
+  VERSION 1
   GIT_REPOSITORY https://github.com/MRChemSoft/mrcpp.git
   GIT_TAG 317a9dfe504340468b874073beea5103ad8f9f59
 
