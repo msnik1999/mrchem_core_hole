@@ -24,6 +24,7 @@ Options:
   --coverage                             Enable code coverage [default: OFF].
   --mpi                                  Enable MPI parallelization [default: False].
   --omp                                  Enable OpenMP parallelization [default: False].
+  --enable-tests=<TESTS>                 Enable tests [default: True].
   --xcfun-old-pbe                        Compile xcfun with old definition of pbe parameters [default: False].
   --nlohmann_json=<STRING>               Behaviour for finding/fetching nlohmann_json (default, onlylocal, onlyfetch) [default: default].
   --xcfun=<STRING>                       Behaviour for finding/fetching XCFun (default, onlylocal, onlyfetch) [default: default].
@@ -53,6 +54,7 @@ def gen_cmake_command(options, arguments):
     command.append('-DENABLE_MPI={0}'.format(arguments['--mpi']))
     command.append('-DENABLE_OPENMP={0}'.format(arguments['--omp']))
     command.append('-DCMAKE_BUILD_TYPE={0}'.format(arguments['--type']))
+    command.append('-DENABLE_TESTS={0}'.format(arguments['--enable-tests']))
     command.append('-DXCFUN_OLD_PBE={0}'.format(arguments['--xcfun-old-pbe']))
     command.append('-DNLOHMANN_JSON_FIND_BEHAVIOUR={0}'.format(arguments['--nlohmann_json']))
     command.append('-DXCFUN_FIND_BEHAVIOUR={0}'.format(arguments['--xcfun']))
