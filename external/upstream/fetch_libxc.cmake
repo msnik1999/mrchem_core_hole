@@ -24,8 +24,8 @@ if(TARGET xc)
   endif()
   target_include_directories(xc
     INTERFACE
-      $<BUILD_INTERFACE:${libxc_SOURCE_DIR}/src>
-      $<BUILD_INTERFACE:${libxc_BINARY_DIR}>
+      $<BUILD_INTERFACE:${Libxc_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${Libxc_BINARY_DIR}>
       $<INSTALL_INTERFACE:include/LibXC>
     )
 endif()
