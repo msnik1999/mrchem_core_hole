@@ -111,6 +111,20 @@ public:
     void setLogGradient(bool log) { log_grad = log; }    ///< @brief Set whether to use logarithmic gradient transformations
     void setDensityCutoff(double cut) { cutoff = cut; }  ///< @brief Set the density threshold below which density is set to 0
     void setDerivOp(std::unique_ptr<mrcpp::DerivativeOperator<3>> &d) { derivOp = std::move(d); }   ///< @brief Set the numerical derivative operator for gradient-based functionals
+    void setCustomExx(double exx) {customExx = exx; }    /// <@brief Set custom exact exchange
+    /**
+     * @brief Transfers ownership of Libxc functional objects and their scaling 
+     * coefficients to the Functional instance
+     * @param[in] libxc_objects_ Vector of initialized Libxc functionals
+     * @param[in] libxc_coefs_   Vector of corresponding weights of the initialized Libxc functionals
+     */
+    void setLibxcFunctionalObject(std::vector<xc_func_type*> &libxc_objects_, std::vector<double> &libxc_coefs_);
+
+    /**
+     * @brief Sets the list of XCFun functional names
+     * @param[in] names_ Vector of functional names used in XCFun
+     */
+    void setXCFunFunctionalNames(const std::vector<std::string> &names_) { xcfun_func_names = names_; }
 
     /**
      * Functional type querying
@@ -129,6 +143,7 @@ public:
      * @return The total fraction of exx to be added to the functional
      */
     double amountEXX() const;
+    double customExx = 0.0;         ///< @brief Used in mapfunctionalName to set exx for custom functionals
     double XCenergy = 0.0;          ///< @brief Stores calculated xc energy for the current state
 
     /**
@@ -148,10 +163,11 @@ public:
      * @details Each row corresponds to one grid point
      */
     Eigen::MatrixXd evaluate_transposed(Eigen::MatrixXd &inp) const;
-    
-    bool libxc;                                 ///< @brief Flag indicating if Libxc is active (True if "DFT {xc_library = libxc}" in input file)
-    std::vector<xc_func_type> libxc_objects;    ///< @brief Vector of initialized Libxc functionals
-    std::vector<double> libxc_coefs;            ///< @brief Vector scaling coefficients for each functional in libxc_objects
+
+    std::vector<std::string> xcfun_func_names;    ///< @brief Vector for storing used XCFun functional names
+    bool libxc;                                   ///< @brief Flag indicating if Libxc is active (True if "DFT {xc_library = libxc}" in input file)
+    std::vector<xc_func_type*> libxc_objects;     ///< @brief Vector of initialized Libxc functionals
+    std::vector<double> libxc_coefs;              ///< @brief Vector scaling coefficients for each functional in libxc_objects
     
     /**
      * @brief Prints the splash screens, version info, and references for the 
@@ -161,13 +177,6 @@ public:
      */
     void print_functional_references() const;
     
-    /**
-     * @brief Transfers ownership of Libxc functional objects and their scaling 
-     * coefficients to the Functional instance
-     * @param[in] libxc_objects_ Vector of initialized Libxc functionals
-     * @param[in] libxc_coefs_   Vector of corresponding weights of the initialized Libxc functionals
-     */
-    void set_libxc_functional_object(std::vector<xc_func_type> libxc_objects_, std::vector<double> libxc_coefs_);
 
     friend class MRDFT;
 

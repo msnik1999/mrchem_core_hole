@@ -186,12 +186,23 @@ specified, otherwise defaults are shown):
       charge = 0                            # Total charge of molecule
       multiplicity = 1                      # Spin multiplicity
       translate = false                     # Translate CoM to world_origin
+      xyz_file = water.xyz                  # XYZ file (alternative to $coords)
     $coords
     O   0.0000     0.0000     0.0000        # Atomic symbol and coordinate
     H   0.0000     1.4375     1.1500        # Atomic symbol and coordinate
     H   0.0000    -1.4375     1.1500        # Atomic symbol and coordinate
     $end
     }
+
+The geometry can be provided either inline via ``$coords`` or from an external
+XYZ file via ``xyz_file``; the two are mutually exclusive.
+
+.. note::
+
+    When using ``xyz_file``, the default for ``world_unit`` changes from
+    ``bohr`` to ``angstrom``, since XYZ files are conventionally written in
+    angstrom. You can still override this explicitly with ``world_unit = bohr``
+    in the top section.
 
 Since the computational domain is always cubic and symmetric around the origin
 it is usually a good idea to ``translate`` the molecule to the origin (as long
@@ -241,6 +252,7 @@ Here we specify the exchange-correlation functional used in DFT
       spin = false                          # Use spin-polarized functionals
       density_cutoff = 1e-11                # Cutoff to set XC potential to zero
       xc_library = xcfun                    # Specify XC functional library
+      functionals = <func>                  # Functional name, see table below for examples
     $functionals
     <func1>     1.0                         # Functional name and coefficient
     <func2>     1.0                         # Functional name and coefficient
@@ -256,7 +268,101 @@ of exact Hartree-Fock exchange as a separate functional
 spin-polarized functionals or not. Unrestricted calculations will use
 spin-polarized functionals by default. The XC functionals are provided by the
 `XCFun <https://github.com/dftlibs/xcfun>`_ library by default, but can be 
-changed with the keyword ``xc_library`` to use either XCFun or `Libxc <https://libxc.gitlab.io/>`_ .
+changed with the keyword ``xc_library`` to use either XCFun or `LibXC <https://libxc.gitlab.io/>`_ .
+
+Exchange-correlation Functionals
+++++++++++++++++++++++++++++++++
+
+A list of available xc functional shorthands in MRChem and their mapping to respective libraries. Note that only LDAs, GGAs and their hybrids are currently supported by MRChem.
+
+.. |c_on| raw:: html
+
+   <div style="text-align: center;"><strong>
+
+.. |c_off| raw:: html
+
+   </strong></div>
+
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| MRChem Shorthand  | XCFun Functionals | LibXC Functionals              | Difference between libraries [*]_ |
++===================+===================+================================+===================================+
+|                             |c_on| LDAs |c_off|                                                            |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| slaterx           | | slaterx         | | LDA_X                        |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| vwn3, vwn3c       | | vwn3c           | | LDA_C_VWN_RPA                |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| vwn5, vwn5c       | | vwn5c           | | LDA_C_VWN                    |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| svwn3             | | svwn3c          | | LDA_X                        |                                   |
+|                   | |                 | | + LDA_C_VWN_RPA              |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| svwn5, svwn, lda  | | svwn3c          | | LDA_X                        |                                   |
+|                   | |                 | | + LDA_C_VWN                  |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+|                             |c_on| GGAs |c_off|                                                            |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| beckex            | | beckex          | | GGA_X_B88                    | 1e-10                             |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| blyp              | | blyp            | | GGA_X_B88                    | 1e-11                             |
+|                   | |                 | | + GGA_C_LYP                  |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| bp86              | | bp86            | | GGA_X_B88                    | 1e-6                              |
+|                   | |                 | | + GGA_C_P86_FT               |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| bpw91             | | bpw91           | | GGA_X_B88                    | 1e-7                              |
+|                   | |                 | | + GGA_C_PW91                 |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| olyp              | | olyp            | | GGA_X_OPTX                   |                                   |
+|                   | |                 | | + GGA_C_LYP                  |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| pbe               | | pbe             | | GGA_X_PBE                    |                                   |
+|                   | |                 | | + GGA_C_PBE                  |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| kt1               | | kt1             | | GGA_XC_KT1                   |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| kt3               | | kt2             | | GGA_XC_KT2                   |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| kt3               | | kt3             | | GGA_XC_KT3                   |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+|                           |c_on| Hyb-GGAs |c_off|                                                          |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| b3lyp, b3lyp5     | | b3lyp           | | HYB_GGA_XC_B3LYP5            | 1e-10                             |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| b3lyp-g           | | b3lyp-g         | | HYB_GGA_XC_B3LYP             |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| b3p86             | | b3p86           | | HYB_GGA_XC_B3P86 + LDA_C_VWN | 1e-2                              |
+|                   | |                 | | - LDA_C_VWN_RPA              |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| b3p86-g           | | b3p86-g         | | HYB_GGA_XC_B3P86             |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+| pbe0              | | pbe0            | | HYB_GGA_XC_PBEH              |                                   |
+|                   | |                 | |                              |                                   |
++-------------------+-------------------+--------------------------------+-----------------------------------+
+
+.. [*] The difference between functionals with the same alias are based on total energies [hartree] of the H\ :math:`_2` dimer and is not dependent on world precision.
+
+XCFun and LibXC functionals can also be specified in the `functionals` input keyword as their raw internal aliases:
+
+.. code-block:: bash
+
+    DFT {
+      xc_library = libxc
+    $functionals
+    XC_GGA_X_PBE     1.0       // PBE exchange
+    XC_GGA_C_PBE     1.0       // PBE correlation
+    $end
+    }
+
+
+Some general notes:
+
+ * Functional aliases are based on the XCFun definitions.
+ * LibXC and XCFun have implementation differences, which in some cases result in numerical variations.
+ * Some functional parameters are intrinsically different in the two libraries, internally changing these in MRChem to match would remove the purpose of using libraries; thus some differences are to be expected.
+ * A complete list of XCFun shorthands and definitions can be found in the `aliases.cpp <https://github.com/dftlibs/xcfun/blob/master/src/functionals/aliases.cpp>`_ file.
+ * A complete list of LibXC functionals can be found in the `xc_funcs.h <https://gitlab.com/libxc/libxc/-/blob/7.0.0/src/xc_funcs.h>`_ file.
+
 
 Properties
 ----------
@@ -276,6 +382,10 @@ properties are available (all but the dipole moment are ``false`` by default)
       geometric_derivative = false          # Compute geometric derivative
       plot_density = false                  # Plot converged density
       plot_orbitals = []                    # Plot converged orbitals
+      population_analysis = false           # Compute population analysis, also for half of the space 
+      population_dimension = 0              # Dimension for population analysis (0=total, 1=split x, 2=y, 3=z)
+      population_orbitals = true            # Compute population analysis for individual orbitals, only if population_analysis = true
+      population_density = false            # Compute population analysis for total density, only if population_analysis = true
     }
 
 Some properties can be further specified in dedicated sections.
@@ -424,10 +534,10 @@ Initial guess
 
 Several types of initial guess are available:
 
- - ``core`` and ``sad`` requires no further input and computes guesses from
+ - ``core``, ``sad`` and ``nao`` requires no further input and computes guesses from
    scratch.
  - ``chk`` and ``mw`` require input files from previous MW calculations.
- - ``cube`` requires input files computed from other sources.
+ - ``cube`` and ``gto`` requires input files computed from other sources.
 
 The ``core`` and ``sad`` guesses are computed by diagonalizing the Hamiltonian
 matrix using a Core or Superposition of Atomic Densities (SAD) Hamiltonian,
@@ -457,6 +567,14 @@ The ``core`` and ``sad`` guesses are fully specified with the following keywords
       guess_screen = 12.0                   # Number of StdDev before a GTO is set to zero (sad_gto)
       guess_rotate = true                   # Localize/Diagonalize guess orbitals before calculating the initial guess energy
     }
+
+The ``gto`` initial guess requires ``.bas`` and ``.mop`` (or ``.moa/.mob``)
+files containing information about the gto basis (in the ``.bas`` file), and the
+mo coefficients (in the ``.mo...`` files). These files are in dalton format, but
+can be generated from orca calculations using the script ``tools/initial_guess/from_orca.py``.
+.. note::
+    For previous users of MRChem: The code for gto initial guess has been generalized
+    to allow for arbitrary high angular momentum.
 
 Checkpointing
 +++++++++++++
@@ -496,6 +614,7 @@ The converged orbitals can be saved to file with the ``write_orbitals`` keyword
     SCF {
       path_orbitals = orbitals              # Path to orbital files
       write_orbitals = false                # Save converged orbitals to file
+      write_density = false                 # Save density to file
     }
 
 This will make individual files for each orbital under the ``path_orbitals``

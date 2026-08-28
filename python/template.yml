@@ -273,9 +273,18 @@ sections:
           the global gauge origin.
       - name: coords
         type: str
+        default: ''
         docstring: |
           Coordinates in xyz format. Atoms can be given either using atom symbol or
-          atom number
+          atom number. Mutually exclusive with ``xyz_file``.
+      - name: xyz_file
+        type: str
+        default: ''
+        docstring: |
+          Path to an XYZ file containing atomic coordinates. The file must follow
+          the standard XYZ format (first line: atom count, second line: comment,
+          remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``.
+          Coordinates are interpreted in the unit set by ``world_unit``.
   - name: Molecule2
     docstring: |
       Define second molecule for embedding.
@@ -300,10 +309,19 @@ sections:
           the global gauge origin.
       - name: coords
         type: str
+        default: ''
         docstring: |
           Coordinates in xyz format. Atoms can be given either using atom symbol or
-          atom number
+          atom number Mutually exclusive with ``xyz_file``.
         default: ''
+      - name: xyz_file
+        type: str
+        default: ''
+        docstring: |
+          Path to an XYZ file containing atomic coordinates. The file must follow
+          the standard XYZ format (first line: atom count, second line: comment,
+          remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``.
+          Coordinates are interpreted in the unit set by ``world_unit``.
   - name: WaveFunction
     docstring: |
       Define the wavefunction method.
@@ -479,6 +497,28 @@ sections:
         default: false
         docstring: |
           Compute Hirshfeld charges.
+      - name: population_analysis
+        type: bool
+        default: false
+        docstring: |
+          Compute population analysis, also possible for half of the space.
+      - name: population_dimension
+        type: int
+        default: 0
+        predicates:
+          - value in [0, 1, 2, 3]
+        docstring: |
+          Dimension for population analysis. 0: total, 1: split x, 2: split y, 3: split z.
+      - name: population_orbitals
+        type: bool
+        default: true
+        docstring: |
+          Compute population analysis for the individual orbitals.
+      - name: population_density
+        type: bool
+        default: false
+        docstring: |
+          Compute population analysis for the total density.
   - name: Forces
     docstring: |
       Define parameters for the computation of forces.
@@ -825,6 +865,12 @@ sections:
           Write final orbitals to disk, file name
           ``<path_orbitals>/phi_<p/a/b>_scf_idx_<0..Np/Na/Nb>``.
           Can be used as ``mw`` initial guess in subsequent calculations.
+      - name: write_density
+        type: bool
+        default: false
+        docstring: |
+          Write final density to disk, file name
+          ``<path_orbitals>/phi_dens_<p/a/b>``.
       - name: write_orbitals_txt
         type: bool
         default: false

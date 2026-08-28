@@ -318,9 +318,17 @@ User input reference
   
     **Default** ``False``
   
-   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number 
+   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number. Mutually exclusive with ``xyz_file``. 
   
     **Type** ``str``
+  
+    **Default** ````
+  
+   :xyz_file: Path to an XYZ file containing atomic coordinates. The file must follow the standard XYZ format (first line: atom count, second line: comment, remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``. Coordinates are interpreted in the unit set by ``world_unit``. 
+  
+    **Type** ``str``
+  
+    **Default** ````
   
  :Molecule2: Define second molecule for embedding. 
 
@@ -346,7 +354,13 @@ User input reference
   
     **Default** ``False``
   
-   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number 
+   :coords: Coordinates in xyz format. Atoms can be given either using atom symbol or atom number Mutually exclusive with ``xyz_file``. 
+  
+    **Type** ``str``
+  
+    **Default** ````
+  
+   :xyz_file: Path to an XYZ file containing atomic coordinates. The file must follow the standard XYZ format (first line: atom count, second line: comment, remaining lines: ``<symbol> x y z``). Mutually exclusive with ``coords``. Coordinates are interpreted in the unit set by ``world_unit``. 
   
     **Type** ``str``
   
@@ -510,6 +524,33 @@ User input reference
     **Default** ``[]``
   
    :hirshfeld_charges: Compute Hirshfeld charges. 
+  
+    **Type** ``bool``
+  
+    **Default** ``False``
+  
+   :population_analysis: Compute population analysis, also possible for half of the space. 
+  
+    **Type** ``bool``
+  
+    **Default** ``False``
+  
+   :population_dimension: Dimension for population analysis. 0: total, 1: split x, 2: split y, 3: split z. 
+  
+    **Type** ``int``
+  
+    **Default** ``0``
+  
+    **Predicates**
+      - ``value in [0, 1, 2, 3]``
+  
+   :population_orbitals: Compute population analysis for the individual orbitals. 
+  
+    **Type** ``bool``
+  
+    **Default** ``True``
+  
+   :population_density: Compute population analysis for the total density. 
   
     **Type** ``bool``
   
@@ -832,6 +873,12 @@ User input reference
   
     **Predicates**
       - ``value[-1] != '/'``
+  
+   :write_density: Write final density to disk, file name ``<path_orbitals>/phi_dens_<p/a/b>``. 
+  
+    **Type** ``bool``
+  
+    **Default** ``False``
   
    :write_orbitals_txt: Write final orbitals to disk, in text format, file name ``<path_orbitals>/phi_<p/a/b>_scf_idx_<0..Np/Na/Nb>``. Can be used as ``mw`` initial guess in subsequent calculations. 
   

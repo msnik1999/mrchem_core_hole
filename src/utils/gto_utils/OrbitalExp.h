@@ -36,6 +36,11 @@ namespace mrchem {
 namespace gto_utils {
 class Intgrl;
 
+struct CartToSphTransformation {
+    std::vector<std::vector<int>> inds;
+    std::vector<std::vector<double>> coeffs;
+};
+
 class OrbitalExp final {
 public:
     OrbitalExp(Intgrl &intgrl);
@@ -45,7 +50,7 @@ public:
     int getAngularMomentum(int n) const;
 
     mrcpp::GaussExp<3> getAO(int i) const { return *this->orbitals[i]; }
-    mrcpp::GaussExp<3> getMO(int i, const DoubleMatrix &M) const;
+    mrcpp::GaussExp<3> getMO(int i, const DoubleMatrix &M, const double threshold=mrcpp::MachineZero) const;
     mrcpp::GaussExp<3> getDens(const DoubleMatrix &D) const;
 
     void rotate(const DoubleMatrix &U);
@@ -54,8 +59,12 @@ protected:
     bool cartesian;
     std::vector<mrcpp::GaussExp<3> *> orbitals;
 
+    std::vector<CartToSphTransformation> sph_transformation_data;
+
     void readAOExpansion(Intgrl &intgrl);
     void transformToSpherical();
+
+    CartToSphTransformation &getSphTransformation(int l);
 };
 
 } // namespace gto_utils

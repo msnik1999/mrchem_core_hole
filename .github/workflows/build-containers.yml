@@ -10,6 +10,8 @@ on:
 jobs:
   build-test-containers:
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     strategy:
       # Keep going on other deployments if anything bloops
       fail-fast: false
