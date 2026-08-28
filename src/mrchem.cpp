@@ -79,6 +79,7 @@ int main(int argc, char **argv) {
         driver::init_molecule(mol_inp, mol);
         if (!mol2_inp.empty()) {
             Molecule mol2;
+            std::cout << "Initializing second molecule for embedding calculation..." << std::endl;
             driver::init_molecule(mol2_inp, mol2);
             scf_out = driver::embedding::run(scf_inp, mol, mol2);
         }

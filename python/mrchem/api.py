@@ -50,6 +50,7 @@ def translate_input(user_dict):
     rsp_dict = write_rsp_calculations(user_dict, mol_dict, origin)
     pseudo_potential_dict = write_pseudo_potential(user_dict, mol_dict)
     mol_dict["pseudopotentials"] = pseudo_potential_dict
+    mol2_dict["pseudopotentials"] = pseudo_potential_dict # use same pseudopotentials for both molecules in embedding calculations; only temporary
 
     if mol_dict["pseudopotentials"]["use_pp"]:
         scf_dict["fock_operator"]["pseudopotential"] = {
