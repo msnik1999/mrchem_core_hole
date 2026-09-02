@@ -1,36 +1,26 @@
-find_package(XCFun CONFIG QUIET
-  NO_CMAKE_PATH
-  NO_CMAKE_PACKAGE_REGISTRY
-  NO_CMAKE_SYSTEM_PACKAGE_REGISTRY
-  )
-if(TARGET XCFun::xcfun)
-  get_property(_loc TARGET XCFun::xcfun PROPERTY LOCATION)
-  message(STATUS "Found XCFun: ${_loc} (found version ${XCFun_VERSION})")
-else()
-  message(STATUS "Suitable XCFun could not be located. Fetching and building!")
-  include(FetchContent)
-  FetchContent_Declare(xcfun_sources
-    QUIET
-    URL
-      https://github.com/dftlibs/xcfun/archive/v2.1.0.tar.gz
-    )
-
-  FetchContent_GetProperties(xcfun_sources)
-
-  set(CMAKE_BUILD_TYPE Release)
-  set(ENABLE_TESTALL FALSE CACHE BOOL "")
-  set(XCFUN_MAX_ORDER 3)  # TODO Maybe as a user-facing option?
-  set(XCFUN_PYTHON_INTERFACE FALSE CACHE BOOL "")
-
-  # Remove this line to restore the "old" pbe behaviour when using XCFun
+cpm_set_find_behaviour(${XCFUN_FIND_BEHAVIOUR})
+set(CMAKE_BUILD_TYPE Release)
+if(NOT XCFUN_OLD_PBE)
   add_compile_definitions(XCFUN_REF_PBEX_MU)
-
-  if(NOT xcfun_sources_POPULATED)
-    FetchContent_Populate(xcfun_sources)
-
-    add_subdirectory(
-      ${xcfun_sources_SOURCE_DIR}
-      ${xcfun_sources_BINARY_DIR}
-      )
+endif()
+CPMAddPackage(
+  NAME XCFun
+  VERSION 2.1
+  GIT_TAG v2.1.1
+  GITHUB_REPOSITORY dftlibs/xcfun
+  FIND_PACKAGE_ARGUMENTS "CONFIG NO_CMAKE_PATH NO_CMAKE_PACKAGE_REGISTRY NO_CMAKE_SYSTEM_PACKAGE_REGISTRY"
+  OPTIONS
+  "ENABLE_TESTALL OFF"
+  "XCFUN_MAX_ORDER 3"
+  "XCFUN_PYTHON_INTERFACE OFF"
+  )
+if(TARGET xcfun)
+  target_compile_options(xcfun PRIVATE -w)
+  if(XCFUN_OLD_PBE)
+    message(STATUS "Compiling XCFun with old PBE parameters (different from LibXC)")
+  else()
+    message(STATUS "Compiling XCFun with new PBE parameters (same as LibXC)")
   endif()
+else()
+  message(STATUS "Using local xcfun: mrchem does not have control over which PBE parameters are used (might be different from LibXC)")
 endif()

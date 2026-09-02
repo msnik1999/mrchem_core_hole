@@ -933,7 +933,7 @@ void driver::scf::plot_quantities(const json &json_plot, Molecule &mol) {
     if (orb_idx.size() > 0) {
         if (orb_idx[0] < 0) {
             // Plotting ALL orbitals
-            for (auto i = 0; i < Phi.size(); i++) {
+            for (size_t i = 0; i < Phi.size(); i++) {
                 if (not mrcpp::mpi::my_func(Phi[i])) continue;
                 t_lap.start();
                 std::stringstream name;
@@ -1153,7 +1153,7 @@ bool driver::rsp::guess_orbitals(const json &json_guess, Molecule &mol) {
         } else if (type == "mw") {
             success_y = initial_guess::mw::setup(Y, prec, mw_yp, mw_ya, mw_yb);
         } else if (type == "cube") {
-            success_x = initial_guess::cube::setup(Y, prec, cube_yp, cube_ya, cube_yb);
+            success_y = initial_guess::cube::setup(Y, prec, cube_yp, cube_ya, cube_yb);
         } else if (type == "none") {
             mrcpp::print::separator(0, '~');
             print_utils::text(0, "Calculation     ", "Compute initial orbitals");
@@ -1187,6 +1187,8 @@ void driver::rsp::write_orbitals(const json &json_orbs, Molecule &mol, bool dyna
  * input section, and will compute all properties which are present in this input.
  */
 void driver::rsp::calc_properties(const json &json_prop, Molecule &mol, int dir, double omega) {
+    (void)omega;
+
     Timer t_tot, t_lap;
     auto plevel = Printer::getPrintLevel();
     if (plevel == 1) mrcpp::print::header(1, "Computing linear response properties");
@@ -1314,8 +1316,8 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
         bool is_azora = json_fock["zora_operator"]["isAZORA"];
         F.setZoraType(include_nuclear, include_coulomb, include_xc, is_azora);
         if (is_azora) {
-            std::string azora_dir_src = AZORA_POTENTIALS_SOURCE_DIR;
-            std::string azora_dir_install = AZORA_POTENTIALS_INSTALL_DIR;
+            std::string azora_dir_src = azora_potentials_source_dir();
+            std::string azora_dir_install = azora_potentials_install_dir();
             std::string azora_dir = "";
             if (json_fock["zora_operator"].contains("azora_potential_path")) { azora_dir = json_fock["zora_operator"]["azora_potential_path"]; }
 
@@ -1432,7 +1434,7 @@ void driver::build_fock_operator(const json &json_fock, Molecule &mol, FockBuild
             auto radii_0 = cavity_p->getOriginalRadii();
             auto radii_ion = std::vector<double>(radii_0.size());
 
-            for (int i = 0; i < radii_0.size(); i++) { radii_ion[i] = radii_0[i] + ion_radius; }
+            for (size_t i = 0; i < radii_0.size(); i++) { radii_ion[i] = radii_0[i] + ion_radius; }
             auto cavity_centers = cavity_p->getCoordinates();
             cavity_ion = std::make_shared<Cavity>(cavity_centers, radii_ion, width_ion);
         } else {

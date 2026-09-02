@@ -99,7 +99,7 @@ mrcpp::FunctionTreeVector<3> SpinLDA::setupCtrInput() {
  * ...
  */
 void SpinLDA::preprocess(mrcpp::FunctionTreeVector<3> &inp_vec) {
-    if (inp_vec.size() != 2 * this->order) MSG_ERROR("Invalid input length");
+    if (inp_vec.size() != 2 * static_cast<size_t>(this->order)) MSG_ERROR("Invalid input length");
     if (this->rho_a.size() > 0) MSG_ERROR("Alpha density not empty");
     if (this->rho_b.size() > 0) MSG_ERROR("Beta density not empty");
 

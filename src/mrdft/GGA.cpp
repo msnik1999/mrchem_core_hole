@@ -100,7 +100,7 @@ mrcpp::FunctionTreeVector<3> GGA::setupCtrInput() {
  * ...
  */
 void GGA::preprocess(mrcpp::FunctionTreeVector<3> &inp_vec) {
-    if (inp_vec.size() != this->order) MSG_ERROR("Invalid input length");
+    if (static_cast<int>(inp_vec.size()) != this->order) MSG_ERROR("Invalid input length");
     if (this->rho.size() > 0) MSG_ERROR("Density not empty");
     if (this->grad.size() > 0) MSG_ERROR("Gradient not empty");
 

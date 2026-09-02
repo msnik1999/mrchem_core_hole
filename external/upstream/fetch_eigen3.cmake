@@ -1,20 +1,10 @@
-find_package(Eigen3 3.4 CONFIG QUIET
-  NO_CMAKE_PATH
-  NO_CMAKE_PACKAGE_REGISTRY
+cpm_set_find_behaviour(${EIGEN3_FIND_BEHAVIOUR})
+CPMAddPackage(
+  NAME Eigen3
+  VERSION "3.4...<4"
+  GIT_TAG 3.4.0
+  GITLAB_REPOSITORY libeigen/eigen
+  FIND_PACKAGE_ARGUMENTS "CONFIG NO_CMAKE_PATH NO_CMAKE_PACKAGE_REGISTRY NO_CMAKE_SYSTEM_PACKAGE_REGISTRY"
+  OPTIONS
+  "BUILD_TESTING OFF"
   )
-
-if(TARGET Eigen3::Eigen)
-  message(STATUS "Using Eigen3: ${EIGEN3_ROOT_DIR} (version ${Eigen3_VERSION})")
-else()
-  message(STATUS "Suitable Eigen3 could not be located. Fetching and building!")
-  include(FetchContent)
-
-  FetchContent_Declare(eigen3
-    QUIET
-    URL
-      https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
-    )
-
-  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(eigen3)
-endif()
