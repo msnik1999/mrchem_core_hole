@@ -46,9 +46,9 @@ jobs:
         ctest -C $BUILD_TYPE --output-on-failure --verbose
         lcov --version
         lcov --directory . --capture --ignore-errors inconsistent,source --exclude '*/_deps/*' --output-file coverage.info
-        lcov --remove coverage.info '/usr/*' --output-file coverage.info
-        lcov --remove coverage.info 'external/*' --output-file coverage.info
-        lcov --remove coverage.info 'test/*' --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --ignore-errors unused --output-file coverage.info
+        lcov --remove coverage.info 'external/*' --ignore-errors unused --output-file coverage.info
+        lcov --remove coverage.info 'test/*' --ignore-errors unused --output-file coverage.info
         lcov --list coverage.info
 
     - name: Upload coverage to Codecov
