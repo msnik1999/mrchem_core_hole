@@ -2,16 +2,16 @@ option(ENABLE_TESTS "Enable test suite" ON)
 
 if(ENABLE_TESTS)
 
-set(CPM_USE_LOCAL_PACKAGES ON)
+cpm_set_find_behaviour(${CATCH2_FIND_BEHAVIOUR})
 CPMAddPackage(
   NAME Catch2
-  VERSION 3.8.0
+  VERSION 3
+  GIT_TAG v3.16.0
   GITHUB_REPOSITORY catchorg/Catch2
   FIND_PACKAGE_ARGUMENTS "CONFIG"
   OPTIONS
   "BUILD_TESTING OFF"
   )
-unset(CPM_USE_LOCAL_PACKAGES)
 
 add_executable(mrchem-tests unit_tests.cpp)
 
