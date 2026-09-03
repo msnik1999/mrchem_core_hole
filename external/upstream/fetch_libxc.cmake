@@ -1,3 +1,4 @@
+option(LIBXC_FIND_BEHAVIOUR "Find LibXC behavior" "default")
 cpm_set_find_behaviour(${LIBXC_FIND_BEHAVIOUR})
 set(_saved_install_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
 set(CMAKE_INSTALL_INCLUDEDIR "include/LibXC" CACHE STRING "" FORCE)

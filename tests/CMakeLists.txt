@@ -1,7 +1,7 @@
 option(ENABLE_TESTS "Enable test suite" ON)
 
 if(ENABLE_TESTS)
-
+option(CATCH2_FIND_BEHAVIOUR "Find Catch2 behavior" "default")
 cpm_set_find_behaviour(${CATCH2_FIND_BEHAVIOUR})
 CPMAddPackage(
   NAME Catch2

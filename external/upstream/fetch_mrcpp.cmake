@@ -1,3 +1,4 @@
+option(MRCPP_FIND_BEHAVIOUR "Find MRCPP behavior" "default")
 cpm_set_find_behaviour(${MRCPP_FIND_BEHAVIOUR})
 set(CMAKE_BUILD_TYPE Release)
 set(Eigen3_DIR ${eigen3_BINARY_DIR})

@@ -1,3 +1,4 @@
+option(EIGEN3_FIND_BEHAVIOUR "Find Eigen3 behavior" "default")
 cpm_set_find_behaviour(${EIGEN3_FIND_BEHAVIOUR})
 CPMAddPackage(
   NAME Eigen3

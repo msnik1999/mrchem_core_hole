@@ -1,3 +1,4 @@
+option(NLOHMANN_JSON_FIND_BEHAVIOUR "Find nlohmann_json behavior" "default")
 cpm_set_find_behaviour(${NLOHMANN_JSON_FIND_BEHAVIOUR})
 CPMAddPackage(
   NAME nlohmann_json

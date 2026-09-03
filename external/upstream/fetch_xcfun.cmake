@@ -1,3 +1,4 @@
+option(XCFUN_FIND_BEHAVIOUR "Find XCFun behavior" "default")
 cpm_set_find_behaviour(${XCFUN_FIND_BEHAVIOUR})
 set(CMAKE_BUILD_TYPE Release)
 if(NOT XCFUN_OLD_PBE)
