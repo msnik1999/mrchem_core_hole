@@ -43,6 +43,8 @@ jobs:
 
           # build container
           sudo -E apptainer build container.sif recipes/"$recipe_name"
+          # the root build leaves root-owned files in ~/.apptainer, which breaks the unprivileged login/push
+          sudo chown -R "$(id -u):$(id -g)" "$HOME/.apptainer"
 
           # determine release tag
           if [[ ${GITHUB_EVENT_NAME} == "release" ]]; then
