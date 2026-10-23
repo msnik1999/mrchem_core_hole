@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-test-containers:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     strategy:
       # Keep going on other deployments if anything bloops
       fail-fast: false
