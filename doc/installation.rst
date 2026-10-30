@@ -19,10 +19,30 @@ By default, all dependencies will be **fetched** at configure time if they are
 not already available.
 
 
+------------------
+Obtaining the code
+------------------
+
+The latest development version of MRChem can be found on the ``master``
+branch on GitHub::
+
+    $ git clone https://github.com/MRChemSoft/mrchem.git
+
+The released versions can be found from Git tags ``vX.Y.Z`` under the
+``release/X.Y`` branches in the same repository, or a zip file can be
+downloaded from `Zenodo <https://doi.org/10.5281/zenodo.3606658>`_.
+
+By default, all dependencies will be **fetched** at configure time if they are
+not already available.
+
+
 -------------------
 Build prerequisites
 -------------------
 
+- Python-3.10 (or later)
+- CMake-3.22 (or later)
+- GNU-11.2, Clang-14.0 or IntelLLVM-2022.1 (or later) compilers (C++17 standard)
 - Python-3.10 (or later)
 - CMake-3.22 (or later)
 - GNU-11.2, Clang-14.0 or IntelLLVM-2022.1 (or later) compilers (C++17 standard)
@@ -40,15 +60,19 @@ C++ dependencies
 The MRChem program depends on the following C++ libraries:
 
 - Input handling: `nlohmann/json-3.12  <https://github.com/nlohmann/json>`_
+- Input handling: `nlohmann/json-3.12  <https://github.com/nlohmann/json>`_
 - Multiwavelets: `MRCPP-1.4  <https://github.com/MRChemSoft/mrcpp>`_
 - Linear algebra: `Eigen-3.4  <https://gitlab.com/libeigen/eigen>`_
-- DFT functionals: `XCFun-2.1  <https://github.com/dftlibs/xcfun>`_
+- DFT functionals (optional):
+    - `XCFun-2.1  <https://github.com/dftlibs/xcfun>`_
+    - `LibXC-7.0  <https://gitlab.com/libxc/libxc>`_
 
 All these dependencies will be downloaded automatically at configure time by
 CMake, but can also be linked manually by setting the variables::
 
     MRCPP_DIR=<path_to_mrcpp>/share/cmake/MRCPP
     XCFun_DIR=<path_to_xcfun>/share/cmake/XCFun
+    Libxc_DIR=<path_to_libxc>/lib/cmake/
     Eigen3_DIR=<path_to_eigen3>/share/eigen3/cmake
     nlohmann_json_DIR=<path_to_nlohmann_json>
 
@@ -83,6 +107,9 @@ doing::
     $ pipenv run python -c "print('Hello, world')"
 
 
+-----------------
+Building the code
+-----------------
 -----------------
 Building the code
 -----------------
